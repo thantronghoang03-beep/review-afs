@@ -81,15 +81,7 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-export async function runReview(input: ReviewInput): Promise<ReviewResult> {
-  const systemPrompt = buildSystemPrompt();
-  const userMessage = buildUserMessage(input);
-
-  const approxTokens = estimateTokens(systemPrompt) + estimateTokens(userMessage);
-  if (approxTokens > MAX_INPUT_TOKENS) {
-    throw new ReviewInputTooLargeError(approxTokens);
-  }
-
+async function callOpenRouterOnce(systemPrompt: string, userMessage: string): Promise<ReviewResult> {
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
@@ -145,4 +137,36 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
     outputTokens: json.usage?.completion_tokens ?? 0,
     cacheReadTokens: json.usage?.prompt_tokens_details?.cached_tokens ?? 0,
   };
+}
+
+// Free-tier model pools on OpenRouter route across shared upstream capacity and are
+// observed to be flaky in practice: the exact same prompt/schema can return a clean
+// response in ~2s or fail after several minutes with no tool call at all. Retrying is
+// cheap (no cost on a :free model) and resolves most of that transient flakiness.
+const MAX_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = [3000, 8000];
+
+export async function runReview(input: ReviewInput): Promise<ReviewResult> {
+  const systemPrompt = buildSystemPrompt();
+  const userMessage = buildUserMessage(input);
+
+  const approxTokens = estimateTokens(systemPrompt) + estimateTokens(userMessage);
+  if (approxTokens > MAX_INPUT_TOKENS) {
+    throw new ReviewInputTooLargeError(approxTokens);
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await callOpenRouterOnce(systemPrompt, userMessage);
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS[attempt - 1]));
+      }
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`Đã thử ${MAX_ATTEMPTS} lần nhưng vẫn lỗi (model có thể đang không ổn định): ${message}`);
 }

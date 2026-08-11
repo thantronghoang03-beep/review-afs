@@ -9,7 +9,7 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: OPENROUTER_MODEL
-        value: nvidia/nemotron-3.5-lightning:free
+        value: nvidia/nemotron-3-super-120b-a12b:free
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
