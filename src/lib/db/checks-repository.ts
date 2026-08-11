@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { getDb } from "./client";
+import { getSupabase } from "@/lib/supabase/client";
 import type {
   Check,
   CheckListItem,
@@ -48,9 +48,7 @@ function rowToCheck(row: Record<string, unknown>): Check {
     fileIrcOriginalPath: (row.file_irc_original_path as string) ?? null,
     status: row.status as CheckStatus,
     errorMessage: (row.error_message as string) ?? null,
-    categoriesChecked: row.categories_checked_json
-      ? (JSON.parse(row.categories_checked_json as string) as CategoriesChecked)
-      : null,
+    categoriesChecked: (row.categories_checked_json as CategoriesChecked) ?? null,
     claudeModel: (row.claude_model as string) ?? null,
     claudeInputTokens: (row.claude_input_tokens as number) ?? null,
     claudeOutputTokens: (row.claude_output_tokens as number) ?? null,
@@ -61,53 +59,45 @@ function rowToCheck(row: Record<string, unknown>): Check {
   };
 }
 
-export function createCheck(input: CreateCheckInput): Check {
-  const db = getDb();
-  const id = input.id;
-  db.prepare(
-    `INSERT INTO checks (
-      id, company_id, client_name, created_by, fiscal_year, period_current_start, period_current_end,
-      period_prior_start, period_prior_end, period_type,
-      file_vn_path, file_en_path, file_erc_latest_path, file_erc_original_path,
-      file_irc_latest_path, file_irc_original_path, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing')`
-  ).run(
-    id,
-    input.companyId,
-    input.clientName,
-    input.createdBy,
-    input.fiscalYear,
-    input.periodCurrentStart,
-    input.periodCurrentEnd,
-    input.periodPriorStart,
-    input.periodPriorEnd,
-    input.periodType,
-    input.files.fileVnPath,
-    input.files.fileEnPath,
-    input.files.fileErcLatestPath,
-    input.files.fileErcOriginalPath,
-    input.files.fileIrcLatestPath,
-    input.files.fileIrcOriginalPath
-  );
-  return getCheck(id)!;
+export async function createCheck(input: CreateCheckInput): Promise<Check> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("checks").insert({
+    id: input.id,
+    company_id: input.companyId,
+    client_name: input.clientName,
+    created_by: input.createdBy,
+    fiscal_year: input.fiscalYear,
+    period_current_start: input.periodCurrentStart,
+    period_current_end: input.periodCurrentEnd,
+    period_prior_start: input.periodPriorStart,
+    period_prior_end: input.periodPriorEnd,
+    period_type: input.periodType,
+    file_vn_path: input.files.fileVnPath,
+    file_en_path: input.files.fileEnPath,
+    file_erc_latest_path: input.files.fileErcLatestPath,
+    file_erc_original_path: input.files.fileErcOriginalPath,
+    file_irc_latest_path: input.files.fileIrcLatestPath,
+    file_irc_original_path: input.files.fileIrcOriginalPath,
+    status: "processing",
+  });
+  if (error) throw error;
+  return (await getCheck(input.id))!;
 }
 
-export function getCheck(id: string): Check | null {
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM checks WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
-  return row ? rowToCheck(row) : null;
+export async function getCheck(id: string): Promise<Check | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("checks").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? rowToCheck(data) : null;
 }
 
-export function markCheckStarted(id: string): void {
-  const db = getDb();
-  db.prepare(
-    "UPDATE checks SET started_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"
-  ).run(id);
+export async function markCheckStarted(id: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("checks").update({ started_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw error;
 }
 
-export function markCheckDone(
+export async function markCheckDone(
   id: string,
   data: {
     categoriesChecked: CategoriesChecked;
@@ -117,117 +107,108 @@ export function markCheckDone(
     claudeCacheReadTokens: number;
     rawAiResponseJson: string;
   }
-): void {
-  const db = getDb();
-  db.prepare(
-    `UPDATE checks SET
-      status = 'done',
-      categories_checked_json = ?,
-      claude_model = ?,
-      claude_input_tokens = ?,
-      claude_output_tokens = ?,
-      claude_cache_read_tokens = ?,
-      raw_ai_response_json = ?,
-      completed_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
-    WHERE id = ?`
-  ).run(
-    JSON.stringify(data.categoriesChecked),
-    data.claudeModel,
-    data.claudeInputTokens,
-    data.claudeOutputTokens,
-    data.claudeCacheReadTokens,
-    data.rawAiResponseJson,
-    id
-  );
+): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("checks")
+    .update({
+      status: "done",
+      categories_checked_json: data.categoriesChecked,
+      claude_model: data.claudeModel,
+      claude_input_tokens: data.claudeInputTokens,
+      claude_output_tokens: data.claudeOutputTokens,
+      claude_cache_read_tokens: data.claudeCacheReadTokens,
+      raw_ai_response_json: JSON.parse(data.rawAiResponseJson),
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export function markCheckError(id: string, errorMessage: string): void {
-  const db = getDb();
-  db.prepare(
-    `UPDATE checks SET status = 'error', error_message = ?, completed_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`
-  ).run(errorMessage, id);
+export async function markCheckError(id: string, errorMessage: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("checks")
+    .update({ status: "error", error_message: errorMessage, completed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export function deleteCheck(id: string): void {
-  const db = getDb();
-  db.prepare("DELETE FROM checks WHERE id = ?").run(id);
+export async function deleteCheck(id: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("checks").delete().eq("id", id);
+  if (error) throw error;
 }
 
-export function listChecks(filters: CheckListFilters = {}): CheckListItem[] {
-  const db = getDb();
-  const conditions: string[] = [];
-  const params: Array<string> = [];
+export async function listChecks(filters: CheckListFilters = {}): Promise<CheckListItem[]> {
+  const supabase = getSupabase();
+  let query = supabase
+    .from("checks")
+    .select("id, company_id, client_name, created_by, fiscal_year, period_type, status, created_at, completed_at")
+    .order("created_at", { ascending: false });
 
-  if (filters.companyId) {
-    conditions.push("c.company_id = ?");
-    params.push(filters.companyId);
-  }
-  if (filters.status) {
-    conditions.push("c.status = ?");
-    params.push(filters.status);
-  }
-  if (filters.periodType) {
-    conditions.push("c.period_type = ?");
-    params.push(filters.periodType);
-  }
-  if (filters.createdBy) {
-    conditions.push("c.created_by = ?");
-    params.push(filters.createdBy);
-  }
-  if (filters.dateFrom) {
-    conditions.push("c.created_at >= ?");
-    params.push(filters.dateFrom);
-  }
-  if (filters.dateTo) {
-    conditions.push("c.created_at <= ?");
-    params.push(filters.dateTo);
+  if (filters.companyId) query = query.eq("company_id", filters.companyId);
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.periodType) query = query.eq("period_type", filters.periodType);
+  if (filters.createdBy) query = query.eq("created_by", filters.createdBy);
+  if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("created_at", filters.dateTo);
+
+  const { data: checks, error } = await query;
+  if (error) throw error;
+  if (!checks || checks.length === 0) return [];
+
+  const checkIds = checks.map((c) => c.id as string);
+  const { data: findings, error: findingsError } = await supabase
+    .from("findings")
+    .select("check_id, status, severity")
+    .in("check_id", checkIds);
+  if (findingsError) throw findingsError;
+
+  const countsByCheck = new Map<string, { total: number; critical: number; medium: number; minor: number }>();
+  for (const f of findings ?? []) {
+    const checkId = f.check_id as string;
+    const bucket = countsByCheck.get(checkId) ?? { total: 0, critical: 0, medium: 0, minor: 0 };
+    if (f.status !== "match") bucket.total += 1;
+    if (f.severity === "critical") bucket.critical += 1;
+    if (f.severity === "medium") bucket.medium += 1;
+    if (f.severity === "minor") bucket.minor += 1;
+    countsByCheck.set(checkId, bucket);
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
-  const rows = db
-    .prepare(
-      `SELECT
-        c.id, c.company_id, c.client_name, c.created_by, c.fiscal_year, c.period_type, c.status, c.created_at, c.completed_at,
-        (SELECT COUNT(*) FROM findings f WHERE f.check_id = c.id AND f.status != 'match') AS total_findings,
-        (SELECT COUNT(*) FROM findings f WHERE f.check_id = c.id AND f.severity = 'critical') AS critical_count,
-        (SELECT COUNT(*) FROM findings f WHERE f.check_id = c.id AND f.severity = 'medium') AS medium_count,
-        (SELECT COUNT(*) FROM findings f WHERE f.check_id = c.id AND f.severity = 'minor') AS minor_count
-      FROM checks c
-      ${whereClause}
-      ORDER BY c.created_at DESC`
-    )
-    .all(...params) as Record<string, unknown>[];
-
-  return rows.map((row) => ({
-    id: row.id as string,
-    companyId: (row.company_id as string) ?? null,
-    clientName: row.client_name as string,
-    createdBy: (row.created_by as string) ?? null,
-    fiscalYear: row.fiscal_year as string,
-    periodType: row.period_type as PeriodType,
-    status: row.status as CheckStatus,
-    createdAt: row.created_at as string,
-    completedAt: (row.completed_at as string) ?? null,
-    totalFindings: row.total_findings as number,
-    criticalCount: row.critical_count as number,
-    mediumCount: row.medium_count as number,
-    minorCount: row.minor_count as number,
-  }));
+  return checks.map((row) => {
+    const counts = countsByCheck.get(row.id as string) ?? { total: 0, critical: 0, medium: 0, minor: 0 };
+    return {
+      id: row.id as string,
+      companyId: (row.company_id as string) ?? null,
+      clientName: row.client_name as string,
+      createdBy: (row.created_by as string) ?? null,
+      fiscalYear: row.fiscal_year as string,
+      periodType: row.period_type as PeriodType,
+      status: row.status as CheckStatus,
+      createdAt: row.created_at as string,
+      completedAt: (row.completed_at as string) ?? null,
+      totalFindings: counts.total,
+      criticalCount: counts.critical,
+      mediumCount: counts.medium,
+      minorCount: counts.minor,
+    };
+  });
 }
 
-export function countChecksSince(isoDate: string): number {
-  const db = getDb();
-  const row = db
-    .prepare("SELECT COUNT(*) as n FROM checks WHERE created_at >= ?")
-    .get(isoDate) as { n: number };
-  return row.n;
+export async function countChecksSince(isoDate: string): Promise<number> {
+  const supabase = getSupabase();
+  const { count, error } = await supabase
+    .from("checks")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", isoDate);
+  if (error) throw error;
+  return count ?? 0;
 }
 
-export function listDistinctReviewers(): string[] {
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT DISTINCT created_by FROM checks WHERE created_by IS NOT NULL ORDER BY created_by ASC")
-    .all() as Array<{ created_by: string }>;
-  return rows.map((r) => r.created_by);
+export async function listDistinctReviewers(): Promise<string[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("checks").select("created_by").not("created_by", "is", null);
+  if (error) throw error;
+  return Array.from(new Set((data ?? []).map((r) => r.created_by as string))).sort();
 }

@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function CheckDetailPage({ params }: PageProps) {
   const { checkId } = await params;
-  const check = getCheck(checkId);
+  const check = await getCheck(checkId);
   if (!check) notFound();
 
   if (check.status === "processing") {
@@ -37,6 +37,6 @@ export default async function CheckDetailPage({ params }: PageProps) {
     );
   }
 
-  const findings = listFindingsForCheck(checkId);
+  const findings = await listFindingsForCheck(checkId);
   return <Step3Results check={check} findings={findings} />;
 }

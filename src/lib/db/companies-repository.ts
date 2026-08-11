@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { getDb } from "./client";
+import { getSupabase } from "@/lib/supabase/client";
 
 export interface Company {
   id: string;
@@ -15,23 +15,24 @@ function rowToCompany(row: Record<string, unknown>): Company {
   };
 }
 
-export function listCompanies(): Company[] {
-  const db = getDb();
-  const rows = db.prepare("SELECT * FROM companies ORDER BY name ASC").all() as Record<string, unknown>[];
-  return rows.map(rowToCompany);
+export async function listCompanies(): Promise<Company[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("companies").select("*").order("name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(rowToCompany);
 }
 
-export function getCompany(id: string): Company | null {
-  const db = getDb();
-  const row = db.prepare("SELECT * FROM companies WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
-  return row ? rowToCompany(row) : null;
+export async function getCompany(id: string): Promise<Company | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("companies").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? rowToCompany(data) : null;
 }
 
-export function createCompany(name: string): Company {
-  const db = getDb();
+export async function createCompany(name: string): Promise<Company> {
+  const supabase = getSupabase();
   const id = `co_${nanoid(10)}`;
-  db.prepare("INSERT INTO companies (id, name) VALUES (?, ?)").run(id, name);
-  return getCompany(id)!;
+  const { error } = await supabase.from("companies").insert({ id, name });
+  if (error) throw error;
+  return (await getCompany(id))!;
 }

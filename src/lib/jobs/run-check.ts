@@ -3,6 +3,7 @@ import { buildPageDelimitedDocument } from "@/lib/pdf/build-document";
 import { runReview } from "@/lib/ai/review";
 import { markCheckDone, markCheckError, markCheckStarted, getCheck } from "@/lib/db/checks-repository";
 import { insertFindings } from "@/lib/db/findings-repository";
+import { downloadFile } from "@/lib/storage/supabase-storage";
 import { SEVERITY_BY_STATUS } from "@/types/finding";
 import type { CategoriesChecked, FindingCategory } from "@/types/finding";
 import type { FindingsResponse } from "@/lib/ai/findings-schema";
@@ -16,16 +17,21 @@ function toCategoriesChecked(categories: FindingsResponse["categories"]): Catego
   ) as CategoriesChecked;
 }
 
+async function extractFromStorage(storagePath: string) {
+  const buffer = await downloadFile(storagePath);
+  return extractPdfPages(buffer);
+}
+
 export async function runCheckJob(checkId: string): Promise<void> {
-  const check = getCheck(checkId);
+  const check = await getCheck(checkId);
   if (!check) return;
 
-  markCheckStarted(checkId);
+  await markCheckStarted(checkId);
 
   try {
     const [vnExtracted, enExtracted] = await Promise.all([
-      extractPdfPages(check.fileVnPath),
-      extractPdfPages(check.fileEnPath),
+      extractFromStorage(check.fileVnPath),
+      extractFromStorage(check.fileEnPath),
     ]);
     const vnDocument = buildPageDelimitedDocument("VN", vnExtracted);
     const enDocument = buildPageDelimitedDocument("EN", enExtracted);
@@ -33,9 +39,11 @@ export async function runCheckJob(checkId: string): Promise<void> {
     let ercDocument: string | null = null;
     if (check.fileErcLatestPath) {
       const parts: string[] = [];
-      parts.push(buildPageDelimitedDocument("ERC-LATEST", await extractPdfPages(check.fileErcLatestPath)));
+      parts.push(buildPageDelimitedDocument("ERC-LATEST", await extractFromStorage(check.fileErcLatestPath)));
       if (check.fileErcOriginalPath) {
-        parts.push(buildPageDelimitedDocument("ERC-ORIGINAL", await extractPdfPages(check.fileErcOriginalPath)));
+        parts.push(
+          buildPageDelimitedDocument("ERC-ORIGINAL", await extractFromStorage(check.fileErcOriginalPath))
+        );
       }
       ercDocument = parts.join("\n\n");
     }
@@ -43,9 +51,11 @@ export async function runCheckJob(checkId: string): Promise<void> {
     let ircDocument: string | null = null;
     if (check.fileIrcLatestPath) {
       const parts: string[] = [];
-      parts.push(buildPageDelimitedDocument("IRC-LATEST", await extractPdfPages(check.fileIrcLatestPath)));
+      parts.push(buildPageDelimitedDocument("IRC-LATEST", await extractFromStorage(check.fileIrcLatestPath)));
       if (check.fileIrcOriginalPath) {
-        parts.push(buildPageDelimitedDocument("IRC-ORIGINAL", await extractPdfPages(check.fileIrcOriginalPath)));
+        parts.push(
+          buildPageDelimitedDocument("IRC-ORIGINAL", await extractFromStorage(check.fileIrcOriginalPath))
+        );
       }
       ircDocument = parts.join("\n\n");
     }
@@ -78,9 +88,9 @@ export async function runCheckJob(checkId: string): Promise<void> {
       note: f.note,
       displayOrder: index,
     }));
-    insertFindings(findingsToInsert);
+    await insertFindings(findingsToInsert);
 
-    markCheckDone(checkId, {
+    await markCheckDone(checkId, {
       categoriesChecked: toCategoriesChecked(result.data.categories),
       claudeModel: "claude-sonnet-5",
       claudeInputTokens: result.inputTokens,
@@ -90,6 +100,6 @@ export async function runCheckJob(checkId: string): Promise<void> {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi không xác định khi xử lý kiểm tra.";
-    markCheckError(checkId, message);
+    await markCheckError(checkId, message);
   }
 }

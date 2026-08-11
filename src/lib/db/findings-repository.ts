@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { getDb } from "./client";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Finding, FindingCategory, FindingSeverity, FindingStatus } from "@/types/finding";
 
 interface InsertFindingInput {
@@ -35,37 +35,35 @@ function rowToFinding(row: Record<string, unknown>): Finding {
   };
 }
 
-export function insertFindings(inputs: InsertFindingInput[]): void {
-  const db = getDb();
-  const stmt = db.prepare(
-    `INSERT INTO findings (
-      id, check_id, section, field_label, page_vn, page_en,
-      content_vn, content_en, status, category, severity, note, display_order
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  );
-  for (const input of inputs) {
-    stmt.run(
-      `fnd_${nanoid(12)}`,
-      input.checkId,
-      input.section,
-      input.fieldLabel,
-      input.pageVn,
-      input.pageEn,
-      input.contentVn,
-      input.contentEn,
-      input.status,
-      input.category,
-      input.severity,
-      input.note,
-      input.displayOrder
-    );
-  }
+export async function insertFindings(inputs: InsertFindingInput[]): Promise<void> {
+  if (inputs.length === 0) return;
+  const supabase = getSupabase();
+  const rows = inputs.map((input) => ({
+    id: `fnd_${nanoid(12)}`,
+    check_id: input.checkId,
+    section: input.section,
+    field_label: input.fieldLabel,
+    page_vn: input.pageVn,
+    page_en: input.pageEn,
+    content_vn: input.contentVn,
+    content_en: input.contentEn,
+    status: input.status,
+    category: input.category,
+    severity: input.severity,
+    note: input.note,
+    display_order: input.displayOrder,
+  }));
+  const { error } = await supabase.from("findings").insert(rows);
+  if (error) throw error;
 }
 
-export function listFindingsForCheck(checkId: string): Finding[] {
-  const db = getDb();
-  const rows = db
-    .prepare("SELECT * FROM findings WHERE check_id = ? ORDER BY display_order ASC")
-    .all(checkId) as Record<string, unknown>[];
-  return rows.map(rowToFinding);
+export async function listFindingsForCheck(checkId: string): Promise<Finding[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("findings")
+    .select("*")
+    .eq("check_id", checkId)
+    .order("display_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(rowToFinding);
 }

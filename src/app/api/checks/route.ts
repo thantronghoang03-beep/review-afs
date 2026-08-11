@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { createCheck, generateCheckId, listChecks } from "@/lib/db/checks-repository";
-import { uploadsDirFor } from "@/lib/db/client";
+import { uploadFile, uploadPathFor } from "@/lib/storage/supabase-storage";
 import { computePeriodType } from "@/lib/ai/period-type";
 import { createCheckFieldsSchema, validateUploadedFile } from "@/lib/validation/create-check";
 import { runCheckJob } from "@/lib/jobs/run-check";
@@ -19,7 +17,7 @@ export async function GET(request: Request) {
   const dateFrom = url.searchParams.get("dateFrom") ?? undefined;
   const dateTo = url.searchParams.get("dateTo") ?? undefined;
 
-  const checks = listChecks({
+  const checks = await listChecks({
     companyId: companyId || undefined,
     status: (status as CheckStatus) || undefined,
     periodType: (periodType as PeriodType) || undefined,
@@ -30,11 +28,11 @@ export async function GET(request: Request) {
   return NextResponse.json({ checks });
 }
 
-async function saveFile(dir: string, file: File, filename: string): Promise<string> {
+async function saveFile(checkId: string, file: File, filename: string): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const filePath = path.join(dir, filename);
-  await fs.writeFile(filePath, buffer);
-  return filePath;
+  const storagePath = uploadPathFor(checkId, filename);
+  await uploadFile(storagePath, buffer);
+  return storagePath;
 }
 
 export async function POST(request: Request) {
@@ -87,25 +85,23 @@ export async function POST(request: Request) {
   });
 
   const checkId = generateCheckId();
-  const dir = uploadsDirFor(checkId);
-  await fs.mkdir(dir, { recursive: true });
 
-  const fileVnPath = await saveFile(dir, fileVn!, "bctc_vn.pdf");
-  const fileEnPath = await saveFile(dir, fileEn!, "bctc_en.pdf");
+  const fileVnPath = await saveFile(checkId, fileVn!, "bctc_vn.pdf");
+  const fileEnPath = await saveFile(checkId, fileEn!, "bctc_en.pdf");
   const fileErcLatestPath =
-    fileErcLatest && fileErcLatest.size > 0 ? await saveFile(dir, fileErcLatest, "erc_latest.pdf") : null;
+    fileErcLatest && fileErcLatest.size > 0 ? await saveFile(checkId, fileErcLatest, "erc_latest.pdf") : null;
   const fileErcOriginalPath =
     fileErcOriginal && fileErcOriginal.size > 0
-      ? await saveFile(dir, fileErcOriginal, "erc_original.pdf")
+      ? await saveFile(checkId, fileErcOriginal, "erc_original.pdf")
       : null;
   const fileIrcLatestPath =
-    fileIrcLatest && fileIrcLatest.size > 0 ? await saveFile(dir, fileIrcLatest, "irc_latest.pdf") : null;
+    fileIrcLatest && fileIrcLatest.size > 0 ? await saveFile(checkId, fileIrcLatest, "irc_latest.pdf") : null;
   const fileIrcOriginalPath =
     fileIrcOriginal && fileIrcOriginal.size > 0
-      ? await saveFile(dir, fileIrcOriginal, "irc_original.pdf")
+      ? await saveFile(checkId, fileIrcOriginal, "irc_original.pdf")
       : null;
 
-  const check = createCheck({
+  const check = await createCheck({
     id: checkId,
     companyId: data.companyId,
     clientName: data.clientName,

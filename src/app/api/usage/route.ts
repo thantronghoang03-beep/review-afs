@@ -9,7 +9,7 @@ const MONTHLY_LIMIT = 50;
 export async function GET() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const used = countChecksSince(monthStart);
+  const used = await countChecksSince(monthStart);
   const percent = Math.min(100, Math.round((used / MONTHLY_LIMIT) * 100));
 
   return NextResponse.json({

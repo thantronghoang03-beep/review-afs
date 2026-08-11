@@ -11,11 +11,11 @@ interface Params {
 
 export async function GET(_req: Request, ctx: Params) {
   const { checkId } = await ctx.params;
-  const check = getCheck(checkId);
+  const check = await getCheck(checkId);
   if (!check) {
     return NextResponse.json({ error: "Không tìm thấy kiểm tra." }, { status: 404 });
   }
-  const findings = listFindingsForCheck(checkId);
+  const findings = await listFindingsForCheck(checkId);
   const buffer = await generateXlsxReport(check, findings);
 
   return new NextResponse(new Uint8Array(buffer), {

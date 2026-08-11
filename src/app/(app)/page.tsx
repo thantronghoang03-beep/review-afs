@@ -6,8 +6,8 @@ import { formatDateTime } from "@/lib/format/date";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const checks = listChecks().slice(0, 5);
+export default async function Home() {
+  const checks = (await listChecks()).slice(0, 5);
 
   return (
     <div>

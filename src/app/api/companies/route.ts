@@ -4,7 +4,7 @@ import { listCompanies, createCompany } from "@/lib/db/companies-repository";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return NextResponse.json({ companies: listCompanies() });
+  return NextResponse.json({ companies: await listCompanies() });
 }
 
 export async function POST(request: Request) {
@@ -13,6 +13,6 @@ export async function POST(request: Request) {
   if (!name) {
     return NextResponse.json({ error: "Tên công ty là bắt buộc." }, { status: 400 });
   }
-  const company = createCompany(name);
+  const company = await createCompany(name);
   return NextResponse.json({ company }, { status: 201 });
 }
