@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
     "@supabase/supabase-js": "^2.112.3",
     "date-fns": "^4.4.0",
     "exceljs": "^4.4.0",

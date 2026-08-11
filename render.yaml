@@ -6,8 +6,10 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false
+      - key: OPENROUTER_MODEL
+        value: anthropic/claude-sonnet-4.5
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY

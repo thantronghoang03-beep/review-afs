@@ -1,19 +1,20 @@
-import Anthropic from "@anthropic-ai/sdk";
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-let cachedClient: Anthropic | null = null;
+// Overridable via env so the model slug can be bumped without a code change —
+// OpenRouter's catalog naming can shift independently of Anthropic's own model ids.
+export const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-4.5";
 
-export function getAnthropicClient(): Anthropic {
-  if (!cachedClient) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not set. Add it to .env.local.");
-    }
-    cachedClient = new Anthropic({ apiKey });
+export function getOpenRouterApiKey(): string {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is not set. Add it to .env.local.");
   }
-  return cachedClient;
+  return apiKey;
 }
-
-export const CLAUDE_MODEL = "claude-sonnet-5";
 
 // Conservative pre-flight budget: fail loudly rather than silently truncate audit content.
 export const MAX_INPUT_TOKENS = 700_000;
+
+// A long audit review call can legitimately run for several minutes — don't let the
+// default fetch timeout cut it short.
+export const REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
