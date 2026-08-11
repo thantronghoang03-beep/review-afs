@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local runtime data — client PDFs and SQLite DB, never commit
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+tmp-test/
+.claude/
