@@ -1,7 +1,7 @@
-import { OPENROUTER_MODEL } from "@/lib/ai/client";
+import { CLAUDE_MODEL } from "@/lib/ai/client";
 
 export default function SettingsPage() {
-  const hasApiKey = Boolean(process.env.OPENROUTER_API_KEY);
+  const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
   return (
     <div>
@@ -27,21 +27,20 @@ export default function SettingsPage() {
           <h2 className="mb-3 text-sm font-bold text-zinc-800">Cấu hình AI</h2>
           <div className="flex items-center justify-between text-sm">
             <span className="text-zinc-500">Nhà cung cấp</span>
-            <span className="font-medium text-zinc-700">OpenRouter</span>
+            <span className="font-medium text-zinc-700">Anthropic</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-zinc-500">Model</span>
-            <span className="font-medium text-zinc-700">{OPENROUTER_MODEL}</span>
+            <span className="font-medium text-zinc-700">{CLAUDE_MODEL}</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-zinc-500">OpenRouter API Key</span>
+            <span className="text-zinc-500">Anthropic API Key</span>
             <span className={`font-medium ${hasApiKey ? "text-green-600" : "text-red-600"}`}>
               {hasApiKey ? "Đã cấu hình" : "Chưa cấu hình"}
             </span>
           </div>
           <p className="mt-3 text-xs text-zinc-400">
-            Cấu hình trong file .env.local ở thư mục gốc dự án (biến OPENROUTER_API_KEY, tùy chọn thêm
-            OPENROUTER_MODEL để đổi model).
+            Cấu hình trong file .env.local ở thư mục gốc dự án (biến ANTHROPIC_API_KEY).
           </p>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { runReview } from "@/lib/ai/review";
 import { markCheckDone, markCheckError, markCheckStarted, getCheck } from "@/lib/db/checks-repository";
 import { insertFindings } from "@/lib/db/findings-repository";
 import { downloadFile } from "@/lib/storage/supabase-storage";
-import { OPENROUTER_MODEL } from "@/lib/ai/client";
+import { CLAUDE_MODEL } from "@/lib/ai/client";
 import { SEVERITY_BY_STATUS } from "@/types/finding";
 import type { CategoriesChecked, FindingCategory } from "@/types/finding";
 import type { FindingsResponse } from "@/lib/ai/findings-schema";
@@ -93,7 +93,7 @@ export async function runCheckJob(checkId: string): Promise<void> {
 
     await markCheckDone(checkId, {
       categoriesChecked: toCategoriesChecked(result.data.categories),
-      claudeModel: OPENROUTER_MODEL,
+      claudeModel: CLAUDE_MODEL,
       claudeInputTokens: result.inputTokens,
       claudeOutputTokens: result.outputTokens,
       claudeCacheReadTokens: result.cacheReadTokens,

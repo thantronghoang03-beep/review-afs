@@ -1,10 +1,5 @@
-import {
-  getOpenRouterApiKey,
-  OPENROUTER_BASE_URL,
-  OPENROUTER_MODEL,
-  MAX_INPUT_TOKENS,
-  REQUEST_TIMEOUT_MS,
-} from "./client";
+import type Anthropic from "@anthropic-ai/sdk";
+import { getAnthropicClient, CLAUDE_MODEL, MAX_INPUT_TOKENS } from "./client";
 import { buildSystemPrompt } from "./system-prompt";
 import { findingsInputSchema, findingsResponseZod, type FindingsResponse } from "./findings-schema";
 import type { PeriodType } from "@/types/check";
@@ -65,108 +60,66 @@ function buildUserMessage(input: ReviewInput): string {
   return parts.join("\n");
 }
 
+export async function countReviewTokens(input: ReviewInput): Promise<number> {
+  const client = getAnthropicClient();
+  const result = await client.messages.countTokens({
+    model: CLAUDE_MODEL,
+    system: buildSystemPrompt(),
+    messages: [{ role: "user", content: buildUserMessage(input) }],
+  });
+  return result.input_tokens;
+}
+
 export class ReviewInputTooLargeError extends Error {
-  constructor(public approxTokenCount: number) {
+  constructor(public tokenCount: number) {
     super(
-      `Tài liệu đầu vào quá lớn (~${approxTokenCount.toLocaleString()} tokens ước tính, vượt ngưỡng ${MAX_INPUT_TOKENS.toLocaleString()}). Không thể cắt bớt nội dung vì sẽ làm sai lệch kết quả kiểm toán — vui lòng kiểm tra lại file PDF (có thể bị scan ảnh, hoặc quá nhiều trang).`
+      `Tài liệu đầu vào quá lớn (~${tokenCount.toLocaleString()} tokens, vượt ngưỡng ${MAX_INPUT_TOKENS.toLocaleString()}). Không thể cắt bớt nội dung vì sẽ làm sai lệch kết quả kiểm toán — vui lòng kiểm tra lại file PDF (có thể bị scan ảnh, hoặc quá nhiều trang).`
     );
   }
 }
 
-// OpenRouter has no token-counting endpoint like Anthropic's countTokens — this is a
-// deliberately rough estimate (~4 chars/token) used only as an early, cheap guardrail.
-// The real ceiling is enforced by the model provider itself; this just fails fast and
-// legibly instead of burning minutes on a request likely to be rejected anyway.
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
+export async function runReview(input: ReviewInput): Promise<ReviewResult> {
+  const tokenCount = await countReviewTokens(input);
+  if (tokenCount > MAX_INPUT_TOKENS) {
+    throw new ReviewInputTooLargeError(tokenCount);
+  }
 
-async function callOpenRouterOnce(systemPrompt: string, userMessage: string): Promise<ReviewResult> {
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getOpenRouterApiKey()}`,
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      max_tokens: 32000,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: TOOL_NAME,
-            description: "Nộp kết quả review báo cáo kiểm toán theo đúng schema JSON đã định nghĩa.",
-            parameters: findingsInputSchema,
-          },
-        },
-      ],
-      tool_choice: { type: "function", function: { name: TOOL_NAME } },
-    }),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  const client = getAnthropicClient();
+  // Findings output can legitimately need tens of thousands of tokens for large audit
+  // reports; max_tokens this high requires streaming per the SDK's long-request rule.
+  const stream = client.messages.stream({
+    model: CLAUDE_MODEL,
+    max_tokens: 32000,
+    system: [
+      {
+        type: "text",
+        text: buildSystemPrompt(),
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    tools: [
+      {
+        name: TOOL_NAME,
+        description: "Nộp kết quả review báo cáo kiểm toán theo đúng schema JSON đã định nghĩa.",
+        input_schema: findingsInputSchema as unknown as Anthropic.Tool.InputSchema,
+      },
+    ],
+    tool_choice: { type: "tool", name: TOOL_NAME },
+    messages: [{ role: "user", content: buildUserMessage(input) }],
   });
+  const response = await stream.finalMessage();
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`OpenRouter API error (${response.status}): ${text.slice(0, 500)}`);
+  const toolUse = response.content.find((block) => block.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") {
+    throw new Error("Claude không trả về tool_use block như yêu cầu.");
   }
 
-  const json = await response.json();
-  const message = json.choices?.[0]?.message;
-  const toolCall = message?.tool_calls?.[0];
-  if (!toolCall?.function?.arguments) {
-    throw new Error("OpenRouter không trả về tool call như yêu cầu.");
-  }
-
-  let parsedArgs: unknown;
-  try {
-    parsedArgs = JSON.parse(toolCall.function.arguments);
-  } catch {
-    throw new Error("OpenRouter trả về tool call với arguments không phải JSON hợp lệ.");
-  }
-
-  const data = findingsResponseZod.parse(parsedArgs);
+  const data = findingsResponseZod.parse(toolUse.input);
 
   return {
     data,
-    inputTokens: json.usage?.prompt_tokens ?? 0,
-    outputTokens: json.usage?.completion_tokens ?? 0,
-    cacheReadTokens: json.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
+    cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
   };
-}
-
-// Free-tier model pools on OpenRouter route across shared upstream capacity and are
-// observed to be flaky in practice: the exact same prompt/schema can return a clean
-// response in ~2s or fail after several minutes with no tool call at all. Retrying is
-// cheap (no cost on a :free model) and resolves most of that transient flakiness.
-const MAX_ATTEMPTS = 3;
-const RETRY_BACKOFF_MS = [3000, 8000];
-
-export async function runReview(input: ReviewInput): Promise<ReviewResult> {
-  const systemPrompt = buildSystemPrompt();
-  const userMessage = buildUserMessage(input);
-
-  const approxTokens = estimateTokens(systemPrompt) + estimateTokens(userMessage);
-  if (approxTokens > MAX_INPUT_TOKENS) {
-    throw new ReviewInputTooLargeError(approxTokens);
-  }
-
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await callOpenRouterOnce(systemPrompt, userMessage);
-    } catch (error) {
-      lastError = error;
-      if (attempt < MAX_ATTEMPTS) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_BACKOFF_MS[attempt - 1]));
-      }
-    }
-  }
-
-  const message = lastError instanceof Error ? lastError.message : String(lastError);
-  throw new Error(`Đã thử ${MAX_ATTEMPTS} lần nhưng vẫn lỗi (model có thể đang không ổn định): ${message}`);
 }
