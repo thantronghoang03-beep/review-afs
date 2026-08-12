@@ -93,8 +93,39 @@ const categoryStatusZod = z.object({
   skipped_reason: z.string().nullable(),
 });
 
+// Anthropic's tool-use JSON schema is a strong hint to the model, not a hard grammar
+// constraint the API enforces server-side — a model can (rarely) emit e.g. "12" instead
+// of 12 for a page number. Previously any single such slip made zod reject the ENTIRE
+// response, discarding every correctly-formed finding and wasting the whole AI call.
+// These preprocessors normalize the common slips instead of failing the whole batch.
+const lenientNullableInt = z.preprocess((val) => {
+  if (val === null || val === undefined || val === "") return null;
+  if (typeof val === "number") return Number.isFinite(val) ? Math.trunc(val) : null;
+  if (typeof val === "string") {
+    const match = val.match(/\d+/);
+    return match ? parseInt(match[0], 10) : null;
+  }
+  return null;
+}, z.number().int().nullable());
+
+const lenientNullableString = z.preprocess((val) => {
+  if (val === null || val === undefined) return null;
+  if (typeof val === "string") return val;
+  return String(val);
+}, z.string().nullable());
+
+const lenientString = z.preprocess((val) => {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val;
+  return String(val);
+}, z.string());
+
+function lenientEnum<T extends readonly [string, ...string[]]>(values: T) {
+  return z.preprocess((val) => (typeof val === "string" ? val.trim().toLowerCase() : val), z.enum(values));
+}
+
 export const findingsResponseZod = z.object({
-  period_type_detected: z.enum(["first", "short_prior", "normal", "dissolution"]),
+  period_type_detected: lenientEnum(["first", "short_prior", "normal", "dissolution"] as const),
   categories: z.object({
     so_lieu: categoryStatusZod,
     chinh_ta: categoryStatusZod,
@@ -104,19 +135,19 @@ export const findingsResponseZod = z.object({
   }),
   findings: z.array(
     z.object({
-      section: z.string(),
-      field_label: z.string(),
-      page_vn: z.number().int().nullable(),
-      page_en: z.number().int().nullable(),
-      content_vn: z.string().nullable(),
-      content_en: z.string().nullable(),
-      status: z.enum(["match", "difference", "warning", "missing_in_en", "needs_supplementing"]),
-      category: z.enum(["so_lieu", "chinh_ta", "format", "erc_irc", "khac"]),
-      note: z.string(),
+      section: lenientString,
+      field_label: lenientString,
+      page_vn: lenientNullableInt,
+      page_en: lenientNullableInt,
+      content_vn: lenientNullableString,
+      content_en: lenientNullableString,
+      status: lenientEnum(["match", "difference", "warning", "missing_in_en", "needs_supplementing"] as const),
+      category: lenientEnum(["so_lieu", "chinh_ta", "format", "erc_irc", "khac"] as const),
+      note: lenientString,
     })
   ),
   summary: z.object({
-    overall_notes: z.string(),
+    overall_notes: lenientString,
   }),
 });
 
