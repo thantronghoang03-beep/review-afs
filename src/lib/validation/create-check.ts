@@ -12,6 +12,8 @@ export const createCheckFieldsSchema = z.object({
   periodPriorStart: z.string().trim().nullable(),
   periodPriorEnd: z.string().trim().nullable(),
   isDissolution: z.boolean(),
+  ercChanged: z.enum(["na", "yes"]),
+  ircChanged: z.enum(["na", "yes"]),
 });
 
 export type CreateCheckFields = z.infer<typeof createCheckFieldsSchema>;

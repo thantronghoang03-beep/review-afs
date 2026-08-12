@@ -33,6 +33,10 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   const [fileErcOriginal, setFileErcOriginal] = useState<File | null>(null);
   const [fileIrcLatest, setFileIrcLatest] = useState<File | null>(null);
   const [fileIrcOriginal, setFileIrcOriginal] = useState<File | null>(null);
+  // Per master prompt §"Logic xử lý ghi chú ERC/IRC": N/A → no warning needed;
+  // "changed" without an original to compare against → AI must record a Warning.
+  const [ircChanged, setIrcChanged] = useState<"na" | "yes">("na");
+  const [ercChanged, setErcChanged] = useState<"na" | "yes">("na");
 
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId) ?? null;
 
@@ -66,6 +70,8 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     if (fileErcOriginal) formData.set("fileErcOriginal", fileErcOriginal);
     if (fileIrcLatest) formData.set("fileIrcLatest", fileIrcLatest);
     if (fileIrcOriginal) formData.set("fileIrcOriginal", fileIrcOriginal);
+    formData.set("ercChanged", fileErcLatest ? ercChanged : "na");
+    formData.set("ircChanged", fileIrcLatest ? ircChanged : "na");
 
     onSubmit(formData);
   }
@@ -235,11 +241,88 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
             {showErcIrc ? "Ẩn" : "+ Thêm"} ERC / IRC (tùy chọn — để đối chiếu mục 9 master prompt)
           </button>
           {showErcIrc && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <FileDropSlot label="ERC (mới nhất)" file={fileErcLatest} onChange={setFileErcLatest} />
-              <FileDropSlot label="ERC (bản gốc)" file={fileErcOriginal} onChange={setFileErcOriginal} />
-              <FileDropSlot label="IRC (mới nhất)" file={fileIrcLatest} onChange={setFileIrcLatest} />
-              <FileDropSlot label="IRC (bản gốc)" file={fileIrcOriginal} onChange={setFileIrcOriginal} />
+            <div className="mt-3 space-y-4">
+              <div>
+                <FileDropSlot label="IRC (mới nhất)" file={fileIrcLatest} onChange={setFileIrcLatest} />
+                {fileIrcLatest && (
+                  <div className="mt-2 pl-1">
+                    <label className="mb-1 block text-xs text-zinc-500">
+                      IRC có thay đổi so với bản gốc không?
+                    </label>
+                    <div className="flex gap-3 text-xs text-zinc-600">
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name="ircChanged"
+                          checked={ircChanged === "na"}
+                          onChange={() => setIrcChanged("na")}
+                        />
+                        Không (N/A)
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name="ircChanged"
+                          checked={ircChanged === "yes"}
+                          onChange={() => setIrcChanged("yes")}
+                        />
+                        Có thay đổi
+                      </label>
+                    </div>
+                    {ircChanged === "yes" && (
+                      <div className="mt-2">
+                        <FileDropSlot label="IRC (bản gốc)" file={fileIrcOriginal} onChange={setFileIrcOriginal} />
+                        {!fileIrcOriginal && (
+                          <p className="mt-1 text-xs text-orange-600">
+                            Chưa upload bản gốc — AI sẽ ghi Warning &quot;chưa xác minh được so với bản gốc&quot;.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <FileDropSlot label="ERC (mới nhất)" file={fileErcLatest} onChange={setFileErcLatest} />
+                {fileErcLatest && (
+                  <div className="mt-2 pl-1">
+                    <label className="mb-1 block text-xs text-zinc-500">
+                      ERC có thay đổi so với bản gốc không?
+                    </label>
+                    <div className="flex gap-3 text-xs text-zinc-600">
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name="ercChanged"
+                          checked={ercChanged === "na"}
+                          onChange={() => setErcChanged("na")}
+                        />
+                        Không (N/A)
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name="ercChanged"
+                          checked={ercChanged === "yes"}
+                          onChange={() => setErcChanged("yes")}
+                        />
+                        Có thay đổi
+                      </label>
+                    </div>
+                    {ercChanged === "yes" && (
+                      <div className="mt-2">
+                        <FileDropSlot label="ERC (bản gốc)" file={fileErcOriginal} onChange={setFileErcOriginal} />
+                        {!fileErcOriginal && (
+                          <p className="mt-1 text-xs text-orange-600">
+                            Chưa upload bản gốc — AI sẽ ghi Warning &quot;chưa xác minh được so với bản gốc&quot;.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

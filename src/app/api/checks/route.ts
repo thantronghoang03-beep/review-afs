@@ -48,6 +48,8 @@ export async function POST(request: Request) {
     periodPriorStart: formData.get("periodPriorStart") || null,
     periodPriorEnd: formData.get("periodPriorEnd") || null,
     isDissolution: formData.get("isDissolution") === "true",
+    ercChanged: formData.get("ercChanged") || "na",
+    ircChanged: formData.get("ircChanged") || "na",
   });
 
   if (!fields.success) {
@@ -123,7 +125,7 @@ export async function POST(request: Request) {
   });
 
   // Fire-and-forget: runCheckJob catches all errors internally and persists them to the DB row.
-  void runCheckJob(check.id);
+  void runCheckJob(check.id, { ercChanged: data.ercChanged, ircChanged: data.ircChanged });
 
   return NextResponse.json({ checkId: check.id }, { status: 201 });
 }

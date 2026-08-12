@@ -23,7 +23,12 @@ async function extractFromStorage(storagePath: string) {
   return extractPdfPages(buffer);
 }
 
-export async function runCheckJob(checkId: string): Promise<void> {
+interface RunCheckOptions {
+  ercChanged?: "na" | "yes";
+  ircChanged?: "na" | "yes";
+}
+
+export async function runCheckJob(checkId: string, options: RunCheckOptions = {}): Promise<void> {
   const check = await getCheck(checkId);
   if (!check) return;
 
@@ -73,6 +78,10 @@ export async function runCheckJob(checkId: string): Promise<void> {
       enDocument,
       ercDocument,
       ircDocument,
+      ercHasOriginal: Boolean(check.fileErcOriginalPath),
+      ircHasOriginal: Boolean(check.fileIrcOriginalPath),
+      ercChanged: check.fileErcLatestPath ? (options.ercChanged ?? "na") : null,
+      ircChanged: check.fileIrcLatestPath ? (options.ircChanged ?? "na") : null,
     });
 
     const findingsToInsert = result.data.findings.map((f, index) => ({

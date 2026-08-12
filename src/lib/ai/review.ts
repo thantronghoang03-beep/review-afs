@@ -16,6 +16,12 @@ interface ReviewInput {
   enDocument: string;
   ercDocument: string | null;
   ircDocument: string | null;
+  // null = ERC/IRC không được cung cấp; "na" = cung cấp và không thay đổi; "yes" = có
+  // thay đổi so với bản gốc (kèm cờ đã có bản gốc để đối chiếu hay chưa).
+  ercChanged: "na" | "yes" | null;
+  ircChanged: "na" | "yes" | null;
+  ercHasOriginal: boolean;
+  ircHasOriginal: boolean;
 }
 
 export interface ReviewResult {
@@ -26,6 +32,28 @@ export interface ReviewResult {
 }
 
 const TOOL_NAME = "submit_review_findings";
+
+// Mirrors master prompt's "Logic xử lý ghi chú ERC/IRC" exactly:
+// - N/A (không thay đổi) → không cần bản gốc, ghi nhận bình thường, không Warning.
+// - Có thay đổi nhưng không cung cấp bản gốc → AI PHẢI ghi Warning "chưa xác minh được".
+// - Có đủ bản gốc và bản mới nhất → đối chiếu đầy đủ, không Warning.
+function describeErcIrcStatus(
+  label: "ERC" | "IRC",
+  documentProvided: boolean,
+  changed: "na" | "yes" | null,
+  hasOriginal: boolean
+): string {
+  if (!documentProvided) {
+    return `TÀI LIỆU ${label}: KHÔNG được cung cấp — bỏ qua các kiểm tra ${label} liên quan, đặt categories.erc_irc.checked=false với skipped_reason phù hợp.`;
+  }
+  if (changed === "yes" && !hasOriginal) {
+    return `TÀI LIỆU ${label}: Đã cung cấp bản mới nhất. Người dùng xác nhận CÓ thay đổi so với bản gốc nhưng KHÔNG cung cấp bản gốc để đối chiếu — theo Mục 9, PHẢI ghi Warning "Chưa xác minh được so với bản gốc — cần cung cấp ${label} lần đầu" vào các mục ${label} liên quan.`;
+  }
+  if (changed === "yes" && hasOriginal) {
+    return `TÀI LIỆU ${label}: Đã cung cấp CẢ bản mới nhất và bản gốc (người dùng xác nhận có thay đổi) — đối chiếu đầy đủ theo Mục 9, không cần ghi Warning về việc thiếu bản gốc.`;
+  }
+  return `TÀI LIỆU ${label}: Đã cung cấp bản mới nhất. Người dùng xác nhận KHÔNG có thay đổi so với bản gốc — ghi nhận bình thường, không cần Warning về bản gốc.`;
+}
 
 function buildUserMessage(input: ReviewInput): string {
   const parts = [
@@ -40,8 +68,8 @@ function buildUserMessage(input: ReviewInput): string {
     }`,
     `- PERIOD_TYPE (đã xác định trước, không cần suy luận lại): ${input.periodType}`,
     ``,
-    `TÀI LIỆU ERC: ${input.ercDocument ? "Đã cung cấp, nội dung bên dưới." : "KHÔNG được cung cấp — bỏ qua các kiểm tra ERC/IRC liên quan, đặt categories.erc_irc.checked=false."}`,
-    `TÀI LIỆU IRC: ${input.ircDocument ? "Đã cung cấp, nội dung bên dưới." : "KHÔNG được cung cấp — bỏ qua các kiểm tra ERC/IRC liên quan, đặt categories.erc_irc.checked=false."}`,
+    describeErcIrcStatus("IRC", Boolean(input.ircDocument), input.ircChanged, input.ircHasOriginal),
+    describeErcIrcStatus("ERC", Boolean(input.ercDocument), input.ercChanged, input.ercHasOriginal),
     ``,
     `=== BÁO CÁO TIẾNG VIỆT (VN) ===`,
     input.vnDocument,
