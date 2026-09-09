@@ -1,13 +1,39 @@
+"use client";
+
 import Link from "next/link";
-import { listChecks } from "@/lib/db/checks-repository";
+import { useEffect, useMemo, useState } from "react";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
+import type { CheckListItem } from "@/types/check";
 import { PlusCircleIcon, HistoryIcon, ClockIcon, EyeIcon } from "@/components/ui/icons";
 import { formatDateTime } from "@/lib/format/date";
+import { useAuth } from "@/lib/context/AuthContext";
 
-export const dynamic = "force-dynamic";
+export default function Home() {
+  const { user } = useAuth();
+  const [checks, setChecks] = useState<CheckListItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function Home() {
-  const checks = (await listChecks()).slice(0, 5);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/checks")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setChecks(data.checks ?? []);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Admin sees every check; everyone else only sees checks they created themselves.
+  const visibleChecks = useMemo(
+    () =>
+      checks.filter((c) => user?.role === "manager" || !c.createdBy || c.createdBy === user?.name).slice(0, 5),
+    [checks, user]
+  );
 
   return (
     <div>
@@ -54,14 +80,16 @@ export default async function Home() {
           </Link>
         </div>
 
-        {checks.length === 0 ? (
+        {loading ? (
+          <div className="py-10 text-center text-sm text-zinc-400">Đang tải...</div>
+        ) : visibleChecks.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center text-zinc-400">
             <ClockIcon size={28} />
             <p className="text-sm">Chưa có kiểm tra nào. Bắt đầu bằng cách tạo kiểm tra mới.</p>
           </div>
         ) : (
           <div className="divide-y divide-zinc-100">
-            {checks.map((c) => (
+            {visibleChecks.map((c) => (
               <Link
                 key={c.id}
                 href={`/checks/${c.id}`}
