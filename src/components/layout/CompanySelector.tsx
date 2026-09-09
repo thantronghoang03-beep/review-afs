@@ -51,7 +51,7 @@ export function CompanySelector() {
               setOpen(false);
             }}
             className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
-              selectedCompanyId === null ? "bg-blue-50 text-blue-700" : "text-zinc-600 hover:bg-zinc-50"
+              selectedCompanyId === null ? "bg-jpa-50 text-jpa-700" : "text-zinc-600 hover:bg-zinc-50"
             }`}
           >
             Tất cả công ty
@@ -69,7 +69,7 @@ export function CompanySelector() {
                   setOpen(false);
                 }}
                 className={`w-full truncate rounded-lg px-3 py-2 text-left text-sm ${
-                  selectedCompanyId === c.id ? "bg-blue-50 text-blue-700" : "text-zinc-600 hover:bg-zinc-50"
+                  selectedCompanyId === c.id ? "bg-jpa-50 text-jpa-700" : "text-zinc-600 hover:bg-zinc-50"
                 }`}
               >
                 {c.name}
@@ -83,12 +83,12 @@ export function CompanySelector() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Tên công ty mới..."
-              className="min-w-0 grow rounded-lg border border-zinc-200 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
+              className="min-w-0 grow rounded-lg border border-zinc-200 px-2 py-1.5 text-sm focus:border-jpa-400 focus:outline-none"
             />
             <button
               type="submit"
               disabled={!newName.trim() || creating}
-              className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white disabled:bg-zinc-300"
+              className="shrink-0 rounded-lg bg-jpa-600 px-2.5 py-1.5 text-xs font-medium text-white disabled:bg-zinc-300"
             >
               Thêm
             </button>

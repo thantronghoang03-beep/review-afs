@@ -37,7 +37,7 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                isActive ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                isActive ? "bg-jpa-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
               {f.label} ({count})

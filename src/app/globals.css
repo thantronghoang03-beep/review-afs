@@ -8,6 +8,21 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* JPA Vietvalues brand palette — sampled from jpa.vn's own stylesheet
+     (--bs-primary/--bs-secondary/--bs-light-blue) so the app's chrome
+     (nav, buttons, links, focus rings) matches the firm's real colors.
+     Functional/data-meaning colors (finding status badges, severity
+     tiles, processing/done/error pills) are deliberately left as-is —
+     this palette is for brand chrome only. */
+  --color-jpa-50: #edf1f8;
+  --color-jpa-100: #d6e4f0;
+  --color-jpa-200: #b8cde0;
+  --color-jpa-400: #4d7ba8;
+  --color-jpa-600: #003c76;
+  --color-jpa-700: #002d59;
+  --color-jpa-900: #001a33;
+  --color-jpa-teal: #0093a8;
 }
 
 body {

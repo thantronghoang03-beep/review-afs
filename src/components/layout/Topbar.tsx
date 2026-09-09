@@ -31,7 +31,7 @@ export function Topbar() {
 
         {user && (
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-jpa-100 text-sm font-semibold text-jpa-700">
               {initials(user.name)}
             </div>
             <div className="leading-tight">

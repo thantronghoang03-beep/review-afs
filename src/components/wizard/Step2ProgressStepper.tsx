@@ -76,7 +76,7 @@ export function Step2ProgressStepper({ checkId, onDone, onError }: Step2Progress
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-8">
-      <h3 className="mb-6 text-sm font-bold text-blue-700">2. QUY TRÌNH KIỂM TRA</h3>
+      <h3 className="mb-6 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
 
       <div className="mb-8 flex items-center justify-between px-4">
         {STAGES.map((stage, i) => {
@@ -89,9 +89,9 @@ export function Step2ProgressStepper({ checkId, onDone, onError }: Step2Progress
                 <div
                   className={`relative mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
                     isDone
-                      ? "bg-blue-100 text-blue-600"
+                      ? "bg-jpa-100 text-jpa-600"
                       : isActive
-                        ? "bg-blue-600 text-white"
+                        ? "bg-jpa-600 text-white"
                         : "bg-zinc-100 text-zinc-400"
                   }`}
                 >
@@ -118,7 +118,7 @@ export function Step2ProgressStepper({ checkId, onDone, onError }: Step2Progress
 
       <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-zinc-100">
         <div
-          className="h-full rounded-full bg-blue-600 transition-all duration-500"
+          className="h-full rounded-full bg-jpa-600 transition-all duration-500"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -127,7 +127,7 @@ export function Step2ProgressStepper({ checkId, onDone, onError }: Step2Progress
         <span>{percent}%</span>
       </div>
 
-      <div className="mt-6 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
+      <div className="mt-6 flex items-center gap-2 rounded-lg border border-jpa-100 bg-jpa-50 p-3 text-sm text-jpa-700">
         <AlertTriangleIcon size={16} className="shrink-0" />
         Vui lòng không đóng trang này trong khi hệ thống đang kiểm tra.
       </div>

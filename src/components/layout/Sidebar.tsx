@@ -28,7 +28,7 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white">
       <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-jpa-600 text-white">
           <ShieldCheckIcon size={20} />
         </div>
         <div>
@@ -47,7 +47,7 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-blue-50 text-blue-700"
+                  ? "bg-jpa-50 text-jpa-700"
                   : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
               }`}
             >

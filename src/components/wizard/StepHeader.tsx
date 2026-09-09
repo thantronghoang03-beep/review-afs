@@ -20,7 +20,7 @@ export function StepHeader({ current }: { current: 1 | 2 | 3 }) {
                   isDone
                     ? "bg-green-500 text-white"
                     : isActive
-                      ? "bg-blue-600 text-white"
+                      ? "bg-jpa-600 text-white"
                       : "bg-zinc-100 text-zinc-400"
                 }`}
               >

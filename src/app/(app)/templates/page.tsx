@@ -18,7 +18,7 @@ export default function TemplatesPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {TEMPLATES.map((t) => (
           <div key={t.name} className="flex items-start gap-3 rounded-2xl border border-zinc-200 bg-white p-5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-jpa-50 text-jpa-600">
               <FileTextIcon size={20} />
             </div>
             <div>

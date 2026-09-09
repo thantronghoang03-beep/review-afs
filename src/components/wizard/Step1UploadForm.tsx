@@ -79,14 +79,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="mb-4 text-sm font-bold text-blue-700">1. CUNG CẤP DỮ LIỆU ĐẦU VÀO</h3>
+        <h3 className="mb-4 text-sm font-bold text-jpa-700">1. CUNG CẤP DỮ LIỆU ĐẦU VÀO</h3>
 
         <div className="space-y-4">
           <div>
             <div className="mb-3 text-sm font-semibold text-zinc-700">Thông tin chung</div>
             <label className="mb-1 block text-xs text-zinc-500">Khách hàng (công ty)</label>
             <select
-              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+              className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
               value={selectedCompanyId ?? ""}
               onChange={(e) => setSelectedCompanyId(e.target.value || null)}
             >
@@ -104,7 +104,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
               <button
                 type="button"
                 onClick={() => setShowNewCompany(true)}
-                className="mt-1.5 text-xs font-medium text-blue-600 hover:underline"
+                className="mt-1.5 text-xs font-medium text-jpa-600 hover:underline"
               >
                 + Thêm công ty mới
               </button>
@@ -116,7 +116,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
                   value={newCompanyName}
                   onChange={(e) => setNewCompanyName(e.target.value)}
                   placeholder="Tên công ty mới..."
-                  className="min-w-0 grow rounded-lg border border-zinc-200 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
+                  className="min-w-0 grow rounded-lg border border-zinc-200 px-2 py-1.5 text-sm focus:border-jpa-400 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -131,7 +131,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
                       setCreatingCompany(false);
                     }
                   }}
-                  className="shrink-0 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white disabled:bg-zinc-300"
+                  className="shrink-0 rounded-lg bg-jpa-600 px-2.5 py-1.5 text-xs font-medium text-white disabled:bg-zinc-300"
                 >
                   Tạo
                 </button>
@@ -143,7 +143,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
             <div>
               <label className="mb-1 block text-xs text-zinc-500">Năm tài chính</label>
               <input
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                 value={fiscalYear}
                 onChange={(e) => setFiscalYear(e.target.value)}
               />
@@ -155,14 +155,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
             <div className="flex items-center gap-2">
               <input
                 type="date"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                 value={periodCurrentStart}
                 onChange={(e) => setPeriodCurrentStart(e.target.value)}
               />
               <span className="text-zinc-400">—</span>
               <input
                 type="date"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                 value={periodCurrentEnd}
                 onChange={(e) => setPeriodCurrentEnd(e.target.value)}
               />
@@ -184,14 +184,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                     value={periodPriorStart}
                     onChange={(e) => setPeriodPriorStart(e.target.value)}
                   />
                   <span className="text-zinc-400">—</span>
                   <input
                     type="date"
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                     value={periodPriorEnd}
                     onChange={(e) => setPeriodPriorEnd(e.target.value)}
                   />
@@ -236,7 +236,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           <button
             type="button"
             onClick={() => setShowErcIrc((v) => !v)}
-            className="text-xs font-medium text-blue-600 hover:underline"
+            className="text-xs font-medium text-jpa-600 hover:underline"
           >
             {showErcIrc ? "Ẩn" : "+ Thêm"} ERC / IRC (tùy chọn — để đối chiếu mục 9 master prompt)
           </button>
@@ -339,14 +339,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
         <button
           type="submit"
           disabled={!canSubmit}
-          className="mt-5 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          className="mt-5 w-full rounded-lg bg-jpa-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-jpa-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           {submitting ? "Đang gửi..." : "▶ Bắt đầu kiểm tra"}
         </button>
       </div>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="mb-4 text-sm font-bold text-blue-700">2. QUY TRÌNH KIỂM TRA</h3>
+        <h3 className="mb-4 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
         <div className="space-y-3 text-sm text-zinc-600">
           <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v5.0):</p>
           <ul className="list-inside list-disc space-y-1.5 text-zinc-600">

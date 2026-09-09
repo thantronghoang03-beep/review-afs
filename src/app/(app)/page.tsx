@@ -47,9 +47,9 @@ export default function Home() {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
           href="/new-check"
-          className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/40"
+          className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-jpa-300 hover:bg-jpa-50/40"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-jpa-600 text-white">
             <PlusCircleIcon size={22} />
           </div>
           <div>
@@ -60,7 +60,7 @@ export default function Home() {
 
         <Link
           href="/history"
-          className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-blue-300 hover:bg-blue-50/40"
+          className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 transition-colors hover:border-jpa-300 hover:bg-jpa-50/40"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-800 text-white">
             <HistoryIcon size={22} />
@@ -75,7 +75,7 @@ export default function Home() {
       <div className="rounded-2xl border border-zinc-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-zinc-800">Kiểm tra gần đây</h2>
-          <Link href="/history" className="text-xs font-medium text-blue-600 hover:underline">
+          <Link href="/history" className="text-xs font-medium text-jpa-600 hover:underline">
             Xem tất cả
           </Link>
         </div>

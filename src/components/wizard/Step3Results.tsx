@@ -22,13 +22,13 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-5">
         <div>
-          <h3 className="text-sm font-bold text-blue-700">3. KẾT QUẢ KIỂM TRA</h3>
+          <h3 className="text-sm font-bold text-jpa-700">3. KẾT QUẢ KIỂM TRA</h3>
           <p className="text-xs text-zinc-400">
             {check.clientName} · Năm tài chính {check.fiscalYear}
             {check.createdBy && <> · Người kiểm tra: {check.createdBy}</>}
           </p>
         </div>
-        <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+        <span className="rounded-full bg-jpa-50 px-3 py-1.5 text-xs font-semibold text-jpa-700">
           {PERIOD_TYPE_LABELS[check.periodType]}
         </span>
       </div>
@@ -76,7 +76,7 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
         </a>
         <Link
           href="/new-check"
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="flex items-center gap-2 rounded-lg bg-jpa-600 px-4 py-2 text-sm font-medium text-white hover:bg-jpa-700"
         >
           <PlusCircleIcon size={16} /> Tạo kiểm tra mới
         </Link>

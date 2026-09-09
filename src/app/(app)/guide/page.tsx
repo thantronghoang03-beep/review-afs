@@ -32,7 +32,7 @@ export default function GuidePage() {
       <div className="space-y-4">
         {STEPS.map((s) => (
           <div key={s.title} className="rounded-2xl border border-zinc-200 bg-white p-5">
-            <div className="text-sm font-bold text-blue-700">{s.title}</div>
+            <div className="text-sm font-bold text-jpa-700">{s.title}</div>
             <p className="mt-1 text-sm text-zinc-600">{s.desc}</p>
           </div>
         ))}

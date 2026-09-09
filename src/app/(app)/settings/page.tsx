@@ -15,7 +15,7 @@ export default function SettingsPage() {
           <h2 className="mb-3 text-sm font-bold text-zinc-800">Gói dịch vụ</h2>
           <div className="flex items-center justify-between text-sm">
             <span className="text-zinc-500">Gói hiện tại</span>
-            <span className="font-medium text-blue-700">Professional</span>
+            <span className="font-medium text-jpa-700">Professional</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-zinc-500">Hạn sử dụng</span>

@@ -161,7 +161,7 @@ export default function HistoryPage() {
               setDateFrom("");
               setDateTo("");
             }}
-            className="text-xs font-medium text-blue-600 hover:underline"
+            className="text-xs font-medium text-jpa-600 hover:underline"
           >
             Xóa lọc
           </button>

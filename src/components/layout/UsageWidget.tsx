@@ -22,13 +22,13 @@ export function UsageWidget() {
   return (
     <div className="mx-3 mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3.5">
       <div className="text-xs text-zinc-500">Gói dịch vụ:</div>
-      <div className="text-sm font-semibold text-blue-700">{usage?.packageName ?? "—"}</div>
+      <div className="text-sm font-semibold text-jpa-700">{usage?.packageName ?? "—"}</div>
       <div className="mt-1 text-[11px] text-zinc-400">Hạn sử dụng: 31/12/2025</div>
 
       <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
         <div className="h-1.5 grow overflow-hidden rounded-full bg-zinc-200">
           <div
-            className="h-full rounded-full bg-blue-600"
+            className="h-full rounded-full bg-jpa-600"
             style={{ width: `${usage?.percent ?? 0}%` }}
           />
         </div>
@@ -37,7 +37,7 @@ export function UsageWidget() {
 
       <a
         href="/settings"
-        className="mt-3 block w-full rounded-lg border border-blue-200 bg-white py-1.5 text-center text-xs font-medium text-blue-700 hover:bg-blue-50"
+        className="mt-3 block w-full rounded-lg border border-jpa-200 bg-white py-1.5 text-center text-xs font-medium text-jpa-700 hover:bg-jpa-50"
       >
         Nâng cấp gói
       </a>

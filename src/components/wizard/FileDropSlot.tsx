@@ -49,7 +49,7 @@ export function FileDropSlot({ label, sublabel, file, onChange, required }: File
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-3 py-5 text-center hover:border-blue-300 hover:bg-blue-50/30"
+      className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-3 py-5 text-center hover:border-jpa-300 hover:bg-jpa-50/30"
     >
       <UploadCloudIcon size={22} className="text-zinc-400" />
       <div className="text-sm font-medium text-zinc-700">
