@@ -14,6 +14,11 @@ export const createCheckFieldsSchema = z.object({
   isDissolution: z.boolean(),
   ercChanged: z.enum(["na", "yes"]),
   ircChanged: z.enum(["na", "yes"]),
+  runAuditReview: z.boolean(),
+  runRiskAnalysis: z.boolean(),
+}).refine((v) => v.runAuditReview || v.runRiskAnalysis, {
+  message: "Chọn ít nhất 1 loại kiểm tra: Kiểm tra báo cáo kiểm toán hoặc Phân tích rủi ro báo cáo tài chính.",
+  path: ["runAuditReview"],
 });
 
 export type CreateCheckFields = z.infer<typeof createCheckFieldsSchema>;

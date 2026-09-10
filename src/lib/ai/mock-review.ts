@@ -1,4 +1,5 @@
 import type { FindingsResponse } from "./findings-schema";
+import type { RiskAnalysisResponse } from "./risk-analysis-schema";
 import type { PeriodType } from "@/types/check";
 
 // Cho phép chạy thử toàn bộ luồng "Tạo kiểm tra mới" → xử lý → "Kết quả kiểm tra" trên
@@ -176,5 +177,36 @@ export function buildMockFindingsResponse(input: MockReviewInput): FindingsRespo
       overall_notes:
         "[CHẾ ĐỘ THỬ NGHIỆM — MOCK_AI_REVIEW=true, không gọi Claude API thật] Đây là dữ liệu giả lập cố định dùng để kiểm tra luồng xử lý và giao diện kết quả, không phải kết quả review thật.",
     },
+  };
+}
+
+export function buildMockRiskAnalysisResponse(): RiskAnalysisResponse {
+  return {
+    ratios: [
+      { category: "thanh_khoan", name: "Current ratio (Khả năng thanh toán hiện hành)", unit: "lần", current_year_value: 1.8, prior_year_value: 2.1, note: "[MOCK]" },
+      { category: "thanh_khoan", name: "Quick ratio (Khả năng thanh toán nhanh)", unit: "lần", current_year_value: 1.2, prior_year_value: 1.5, note: "[MOCK]" },
+      { category: "don_bay", name: "Debt/Equity", unit: "lần", current_year_value: 0.9, prior_year_value: 0.7, note: "[MOCK]" },
+      { category: "don_bay", name: "Debt/Assets", unit: "%", current_year_value: 47, prior_year_value: 41, note: "[MOCK]" },
+      { category: "sinh_loi", name: "Gross margin", unit: "%", current_year_value: 32.5, prior_year_value: 34.1, note: "[MOCK]" },
+      { category: "sinh_loi", name: "Net margin", unit: "%", current_year_value: 6.2, prior_year_value: 8.0, note: "[MOCK]" },
+      { category: "sinh_loi", name: "ROA", unit: "%", current_year_value: 5.1, prior_year_value: 6.4, note: "[MOCK]" },
+      { category: "sinh_loi", name: "ROE", unit: "%", current_year_value: 9.6, prior_year_value: 11.2, note: "[MOCK]" },
+      { category: "hieu_qua_hoat_dong", name: "Asset turnover", unit: "lần", current_year_value: 0.82, prior_year_value: 0.80, note: "[MOCK]" },
+      { category: "hieu_qua_hoat_dong", name: "Receivable days", unit: "ngày", current_year_value: 58, prior_year_value: 45, note: "[MOCK]" },
+    ],
+    warnings: [
+      {
+        title: "[MOCK] Đòn bẩy tài chính tăng",
+        level: "medium",
+        description: "[MOCK] Debt/Equity tăng từ 0.7 lên 0.9 lần, cho thấy công ty phụ thuộc nhiều hơn vào nợ vay để tài trợ hoạt động.",
+      },
+      {
+        title: "[MOCK] Vòng quay phải thu chậm lại",
+        level: "low",
+        description: "[MOCK] Receivable days tăng từ 45 lên 58 ngày — cần theo dõi khả năng thu hồi công nợ.",
+      },
+    ],
+    summary:
+      "[MOCK — CHẾ ĐỘ THỬ NGHIỆM] Sức khỏe tài chính nhìn chung ổn định nhưng có dấu hiệu suy giảm nhẹ về khả năng thanh toán và biên lợi nhuận so với năm trước; đòn bẩy tài chính tăng cần theo dõi.",
   };
 }

@@ -43,6 +43,9 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   // "changed" without an original to compare against → AI must record a Warning.
   const [ircChanged, setIrcChanged] = useState<"na" | "yes">("na");
   const [ercChanged, setErcChanged] = useState<"na" | "yes">("na");
+  // Người dùng chọn chạy tác vụ nào — phải chọn ít nhất 1 trong 2.
+  const [runAuditReview, setRunAuditReview] = useState(true);
+  const [runRiskAnalysis, setRunRiskAnalysis] = useState(false);
 
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId) ?? null;
 
@@ -53,6 +56,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     fileVn &&
     fileEn &&
     (isFirstPeriod || (periodPriorStart && periodPriorEnd)) &&
+    (runAuditReview || runRiskAnalysis) &&
     !submitting;
 
   function handleSubmit(e: React.FormEvent) {
@@ -78,6 +82,8 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     if (fileIrcOriginal) formData.set("fileIrcOriginal", fileIrcOriginal);
     formData.set("ercChanged", fileErcLatest ? ercChanged : "na");
     formData.set("ircChanged", fileIrcLatest ? ircChanged : "na");
+    formData.set("runAuditReview", runAuditReview ? "true" : "false");
+    formData.set("runRiskAnalysis", runRiskAnalysis ? "true" : "false");
     filesLegalDossier.forEach((f) => formData.append("fileLegalDossier", f));
 
     onSubmit(formData);
@@ -371,6 +377,29 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
 
         <p className="mt-3 text-xs text-zinc-400">Định dạng hỗ trợ: PDF. Dung lượng tối đa: 50MB/file.</p>
 
+        <div className="mt-4 space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+          <div className="mb-1 text-xs font-semibold text-zinc-700">Chọn loại kiểm tra (chọn ít nhất 1)</div>
+          <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={runAuditReview}
+              onChange={(e) => setRunAuditReview(e.target.checked)}
+            />
+            Kiểm tra báo cáo kiểm toán
+          </label>
+          <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <input
+              type="checkbox"
+              checked={runRiskAnalysis}
+              onChange={(e) => setRunRiskAnalysis(e.target.checked)}
+            />
+            Phân tích rủi ro báo cáo tài chính
+          </label>
+          {!runAuditReview && !runRiskAnalysis && (
+            <p className="text-xs text-red-600">Chưa chọn loại kiểm tra nào.</p>
+          )}
+        </div>
+
         {submitError && (
           <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             <AlertTriangleIcon size={16} className="mt-0.5 shrink-0" />
@@ -391,15 +420,32 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
         <div className="rounded-2xl border border-zinc-200 bg-white p-5">
           <h3 className="mb-4 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
           <div className="space-y-3 text-sm text-zinc-600">
-            <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v6.1):</p>
-            <ul className="list-inside list-disc space-y-1.5 text-zinc-600">
-              <li>Nhận diện loại kỳ kiểm toán (đầu tiên / giai đoạn / bình thường / giải thể)</li>
-              <li>Kiểm tra theo 6 bước: bìa → mục lục → các mục → số trang → đối chiếu Thuyết minh hai chiều → tính toán lại</li>
-              <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format, thuật ngữ chuẩn JPA</li>
-              <li>Đối chiếu ERC/IRC và hồ sơ pháp lý mở rộng (nếu có cung cấp)</li>
-              <li>Tra cứu online hiệu lực Luật/Nghị định/Thông tư được trích dẫn</li>
-              <li>Tự động đối chiếu với báo cáo gần nhất đã tải lên trước đó cho cùng công ty này (nếu có)</li>
-            </ul>
+            {runAuditReview && (
+              <>
+                <p>
+                  <strong>Kiểm tra báo cáo kiểm toán</strong> — AI tự động review theo quy trình chuẩn JPA
+                  Vietvalues (Master Prompt v6.1):
+                </p>
+                <ul className="list-inside list-disc space-y-1.5 text-zinc-600">
+                  <li>Nhận diện loại kỳ kiểm toán (đầu tiên / giai đoạn / bình thường / giải thể)</li>
+                  <li>Kiểm tra theo 6 bước: bìa → mục lục → các mục → số trang → đối chiếu Thuyết minh hai chiều → tính toán lại</li>
+                  <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format, thuật ngữ chuẩn JPA</li>
+                  <li>Đối chiếu ERC/IRC và hồ sơ pháp lý mở rộng (nếu có cung cấp)</li>
+                  <li>Tra cứu online hiệu lực Luật/Nghị định/Thông tư được trích dẫn</li>
+                  <li>Tự động đối chiếu với báo cáo gần nhất đã tải lên trước đó cho cùng công ty này (nếu có)</li>
+                </ul>
+              </>
+            )}
+            {runRiskAnalysis && (
+              <p>
+                <strong>Phân tích rủi ro báo cáo tài chính</strong> — AI tính các tỷ số tài chính (thanh khoản,
+                đòn bẩy, khả năng sinh lời, hiệu quả hoạt động) so sánh năm nay/năm trước, và nêu cảnh báo rủi
+                ro dựa trên số liệu.
+              </p>
+            )}
+            {!runAuditReview && !runRiskAnalysis && (
+              <p className="text-zinc-400">Chọn ít nhất 1 loại kiểm tra bên trái để xem mô tả quy trình.</p>
+            )}
             <p className="text-zinc-400">Thời gian xử lý tùy theo độ dài báo cáo, thường từ 1-3 phút.</p>
           </div>
         </div>

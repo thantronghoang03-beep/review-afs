@@ -9,6 +9,7 @@ import type {
   CheckFilePaths,
 } from "@/types/check";
 import type { CategoriesChecked } from "@/types/finding";
+import type { RiskAnalysis } from "@/types/risk";
 
 interface CreateCheckInput {
   id: string;
@@ -22,6 +23,8 @@ interface CreateCheckInput {
   periodPriorEnd: string | null;
   periodType: PeriodType;
   files: CheckFilePaths;
+  runAuditReview: boolean;
+  runRiskAnalysis: boolean;
 }
 
 export function generateCheckId(): string {
@@ -55,6 +58,9 @@ function rowToCheck(row: Record<string, unknown>): Check {
     claudeOutputTokens: (row.claude_output_tokens as number) ?? null,
     claudeCacheReadTokens: (row.claude_cache_read_tokens as number) ?? null,
     overallNotes: (row.overall_notes as string) ?? null,
+    runAuditReview: (row.run_audit_review as boolean) ?? true,
+    runRiskAnalysis: (row.run_risk_analysis as boolean) ?? false,
+    riskAnalysis: (row.risk_analysis_json as RiskAnalysis) ?? null,
     createdAt: row.created_at as string,
     startedAt: (row.started_at as string) ?? null,
     completedAt: (row.completed_at as string) ?? null,
@@ -81,6 +87,8 @@ export async function createCheck(input: CreateCheckInput): Promise<Check> {
     file_irc_latest_path: input.files.fileIrcLatestPath,
     file_irc_original_path: input.files.fileIrcOriginalPath,
     file_legal_dossier_paths: input.files.fileLegalDossierPaths,
+    run_audit_review: input.runAuditReview,
+    run_risk_analysis: input.runRiskAnalysis,
     status: "processing",
   });
   if (error) throw error;
@@ -103,30 +111,39 @@ export async function markCheckStarted(id: string): Promise<void> {
 export async function markCheckDone(
   id: string,
   data: {
-    categoriesChecked: CategoriesChecked;
-    claudeModel: string;
-    claudeInputTokens: number;
-    claudeOutputTokens: number;
-    claudeCacheReadTokens: number;
-    rawAiResponseJson: string;
-    overallNotes: string;
+    // Kết quả review v6.1 (đối chiếu VN/EN) — vắng mặt nếu người dùng chỉ chọn chạy
+    // "Phân tích rủi ro báo cáo tài chính".
+    auditReview?: {
+      categoriesChecked: CategoriesChecked;
+      claudeModel: string;
+      claudeInputTokens: number;
+      claudeOutputTokens: number;
+      claudeCacheReadTokens: number;
+      rawAiResponseJson: string;
+      overallNotes: string;
+    };
+    // Kết quả phân tích rủi ro tài chính — vắng mặt nếu người dùng không chọn chạy.
+    riskAnalysis?: RiskAnalysis;
   }
 ): Promise<void> {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("checks")
-    .update({
-      status: "done",
-      categories_checked_json: data.categoriesChecked,
-      claude_model: data.claudeModel,
-      claude_input_tokens: data.claudeInputTokens,
-      claude_output_tokens: data.claudeOutputTokens,
-      claude_cache_read_tokens: data.claudeCacheReadTokens,
-      raw_ai_response_json: JSON.parse(data.rawAiResponseJson),
-      overall_notes: data.overallNotes,
-      completed_at: new Date().toISOString(),
-    })
-    .eq("id", id);
+  const update: Record<string, unknown> = {
+    status: "done",
+    completed_at: new Date().toISOString(),
+  };
+  if (data.auditReview) {
+    update.categories_checked_json = data.auditReview.categoriesChecked;
+    update.claude_model = data.auditReview.claudeModel;
+    update.claude_input_tokens = data.auditReview.claudeInputTokens;
+    update.claude_output_tokens = data.auditReview.claudeOutputTokens;
+    update.claude_cache_read_tokens = data.auditReview.claudeCacheReadTokens;
+    update.raw_ai_response_json = JSON.parse(data.auditReview.rawAiResponseJson);
+    update.overall_notes = data.auditReview.overallNotes;
+  }
+  if (data.riskAnalysis) {
+    update.risk_analysis_json = data.riskAnalysis;
+  }
+  const { error } = await supabase.from("checks").update(update).eq("id", id);
   if (error) throw error;
 }
 

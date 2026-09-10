@@ -1,6 +1,7 @@
 import { extractPdfPages } from "@/lib/pdf/extract";
 import { buildPageDelimitedDocument } from "@/lib/pdf/build-document";
 import { runReview } from "@/lib/ai/review";
+import { runRiskAnalysis } from "@/lib/ai/risk-analysis";
 import {
   markCheckDone,
   markCheckError,
@@ -14,6 +15,7 @@ import { CLAUDE_MODEL } from "@/lib/ai/client";
 import { SEVERITY_BY_STATUS } from "@/types/finding";
 import type { CategoriesChecked, FindingCategory } from "@/types/finding";
 import type { FindingsResponse } from "@/lib/ai/findings-schema";
+import type { RiskAnalysis } from "@/types/risk";
 
 function toCategoriesChecked(categories: FindingsResponse["categories"]): CategoriesChecked {
   const entries = Object.entries(categories) as Array<
@@ -48,104 +50,138 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
     const vnDocument = buildPageDelimitedDocument("VN", vnExtracted);
     const enDocument = buildPageDelimitedDocument("EN", enExtracted);
 
-    let ercDocument: string | null = null;
-    if (check.fileErcLatestPath) {
-      const parts: string[] = [];
-      parts.push(buildPageDelimitedDocument("ERC-LATEST", await extractFromStorage(check.fileErcLatestPath)));
-      if (check.fileErcOriginalPath) {
-        parts.push(
-          buildPageDelimitedDocument("ERC-ORIGINAL", await extractFromStorage(check.fileErcOriginalPath))
+    // Người dùng chọn chạy tác vụ nào ở form "Tạo kiểm tra mới" — ít nhất 1 trong 2
+    // phải bật (ép ở validation phía client/server), cả hai độc lập với nhau.
+    let auditReviewResult: Awaited<ReturnType<typeof runReview>> | null = null;
+    if (check.runAuditReview) {
+      let ercDocument: string | null = null;
+      if (check.fileErcLatestPath) {
+        const parts: string[] = [];
+        parts.push(buildPageDelimitedDocument("ERC-LATEST", await extractFromStorage(check.fileErcLatestPath)));
+        if (check.fileErcOriginalPath) {
+          parts.push(
+            buildPageDelimitedDocument("ERC-ORIGINAL", await extractFromStorage(check.fileErcOriginalPath))
+          );
+        }
+        ercDocument = parts.join("\n\n");
+      }
+
+      let ircDocument: string | null = null;
+      if (check.fileIrcLatestPath) {
+        const parts: string[] = [];
+        parts.push(buildPageDelimitedDocument("IRC-LATEST", await extractFromStorage(check.fileIrcLatestPath)));
+        if (check.fileIrcOriginalPath) {
+          parts.push(
+            buildPageDelimitedDocument("IRC-ORIGINAL", await extractFromStorage(check.fileIrcOriginalPath))
+          );
+        }
+        ircDocument = parts.join("\n\n");
+      }
+
+      // v6.1 — Mục 15: đối chiếu phiên bản liền kề. Không cần upload riêng — tự lấy
+      // lượt kiểm tra hoàn tất gần nhất trước đó của CÙNG công ty (nếu có) và dùng
+      // chính báo cáo VN/EN đã tải lên ở lượt đó làm bản đối chiếu.
+      let draftDocument: string | null = null;
+      if (check.companyId) {
+        const previousCheck = await getPreviousCheckForCompany(check.companyId, checkId);
+        if (previousCheck) {
+          const [prevVn, prevEn] = await Promise.all([
+            extractFromStorage(previousCheck.fileVnPath),
+            extractFromStorage(previousCheck.fileEnPath),
+          ]);
+          draftDocument = [
+            buildPageDelimitedDocument("DRAFT-PREV-VN", prevVn),
+            buildPageDelimitedDocument("DRAFT-PREV-EN", prevEn),
+          ].join("\n\n");
+        }
+      }
+
+      // v6.1 — Mục 9A: hồ sơ pháp lý mở rộng, có thể nhiều file — ghép lại thành 1 khối.
+      let legalDossierDocument: string | null = null;
+      if (check.fileLegalDossierPaths.length > 0) {
+        const parts = await Promise.all(
+          check.fileLegalDossierPaths.map(async (path, i) =>
+            buildPageDelimitedDocument(`HO-SO-PHAP-LY-${i + 1}`, await extractFromStorage(path))
+          )
         );
+        legalDossierDocument = parts.join("\n\n");
       }
-      ercDocument = parts.join("\n\n");
+
+      auditReviewResult = await runReview({
+        clientName: check.clientName,
+        fiscalYear: check.fiscalYear,
+        periodCurrentStart: check.periodCurrentStart,
+        periodCurrentEnd: check.periodCurrentEnd,
+        periodPriorStart: check.periodPriorStart,
+        periodPriorEnd: check.periodPriorEnd,
+        periodType: check.periodType,
+        vnDocument,
+        enDocument,
+        ercDocument,
+        ircDocument,
+        ercHasOriginal: Boolean(check.fileErcOriginalPath),
+        ircHasOriginal: Boolean(check.fileIrcOriginalPath),
+        ercChanged: check.fileErcLatestPath ? (options.ercChanged ?? "na") : null,
+        ircChanged: check.fileIrcLatestPath ? (options.ircChanged ?? "na") : null,
+        draftDocument,
+        legalDossierDocument,
+      });
+
+      const findingsToInsert = auditReviewResult.data.findings.map((f, index) => ({
+        checkId,
+        section: f.section,
+        group: f.group,
+        fieldLabel: f.field_label,
+        pageVn: f.page_vn,
+        pageEn: f.page_en,
+        contentVn: f.content_vn,
+        contentEn: f.content_en,
+        status: f.status,
+        category: f.category,
+        severity: SEVERITY_BY_STATUS[f.status],
+        note: f.note,
+        displayOrder: index,
+      }));
+      await insertFindings(findingsToInsert);
     }
 
-    let ircDocument: string | null = null;
-    if (check.fileIrcLatestPath) {
-      const parts: string[] = [];
-      parts.push(buildPageDelimitedDocument("IRC-LATEST", await extractFromStorage(check.fileIrcLatestPath)));
-      if (check.fileIrcOriginalPath) {
-        parts.push(
-          buildPageDelimitedDocument("IRC-ORIGINAL", await extractFromStorage(check.fileIrcOriginalPath))
-        );
-      }
-      ircDocument = parts.join("\n\n");
+    // Tính năng độc lập — phân tích tỷ số tài chính + cảnh báo rủi ro, không liên quan
+    // đối chiếu VN/EN của review v6.1 ở trên.
+    let riskAnalysisResult: RiskAnalysis | null = null;
+    if (check.runRiskAnalysis) {
+      const risk = await runRiskAnalysis({
+        clientName: check.clientName,
+        fiscalYear: check.fiscalYear,
+        vnDocument,
+        enDocument,
+      });
+      riskAnalysisResult = {
+        ratios: risk.ratios.map((r) => ({
+          category: r.category,
+          name: r.name,
+          unit: r.unit,
+          currentYearValue: r.current_year_value,
+          priorYearValue: r.prior_year_value,
+          note: r.note,
+        })),
+        warnings: risk.warnings.map((w) => ({ title: w.title, level: w.level, description: w.description })),
+        summary: risk.summary,
+      };
     }
-
-    // v6.1 — Mục 15: đối chiếu phiên bản liền kề. Không cần upload riêng — tự lấy lượt
-    // kiểm tra hoàn tất gần nhất trước đó của CÙNG công ty (nếu có) và dùng chính báo
-    // cáo VN/EN đã tải lên ở lượt đó làm bản đối chiếu.
-    let draftDocument: string | null = null;
-    if (check.companyId) {
-      const previousCheck = await getPreviousCheckForCompany(check.companyId, checkId);
-      if (previousCheck) {
-        const [prevVn, prevEn] = await Promise.all([
-          extractFromStorage(previousCheck.fileVnPath),
-          extractFromStorage(previousCheck.fileEnPath),
-        ]);
-        draftDocument = [
-          buildPageDelimitedDocument("DRAFT-PREV-VN", prevVn),
-          buildPageDelimitedDocument("DRAFT-PREV-EN", prevEn),
-        ].join("\n\n");
-      }
-    }
-
-    // v6.1 — Mục 9A: hồ sơ pháp lý mở rộng, có thể nhiều file — ghép lại thành một khối.
-    let legalDossierDocument: string | null = null;
-    if (check.fileLegalDossierPaths.length > 0) {
-      const parts = await Promise.all(
-        check.fileLegalDossierPaths.map(async (path, i) =>
-          buildPageDelimitedDocument(`HO-SO-PHAP-LY-${i + 1}`, await extractFromStorage(path))
-        )
-      );
-      legalDossierDocument = parts.join("\n\n");
-    }
-
-    const result = await runReview({
-      clientName: check.clientName,
-      fiscalYear: check.fiscalYear,
-      periodCurrentStart: check.periodCurrentStart,
-      periodCurrentEnd: check.periodCurrentEnd,
-      periodPriorStart: check.periodPriorStart,
-      periodPriorEnd: check.periodPriorEnd,
-      periodType: check.periodType,
-      vnDocument,
-      enDocument,
-      ercDocument,
-      ircDocument,
-      ercHasOriginal: Boolean(check.fileErcOriginalPath),
-      ircHasOriginal: Boolean(check.fileIrcOriginalPath),
-      ercChanged: check.fileErcLatestPath ? (options.ercChanged ?? "na") : null,
-      ircChanged: check.fileIrcLatestPath ? (options.ircChanged ?? "na") : null,
-      draftDocument,
-      legalDossierDocument,
-    });
-
-    const findingsToInsert = result.data.findings.map((f, index) => ({
-      checkId,
-      section: f.section,
-      group: f.group,
-      fieldLabel: f.field_label,
-      pageVn: f.page_vn,
-      pageEn: f.page_en,
-      contentVn: f.content_vn,
-      contentEn: f.content_en,
-      status: f.status,
-      category: f.category,
-      severity: SEVERITY_BY_STATUS[f.status],
-      note: f.note,
-      displayOrder: index,
-    }));
-    await insertFindings(findingsToInsert);
 
     await markCheckDone(checkId, {
-      categoriesChecked: toCategoriesChecked(result.data.categories),
-      claudeModel: CLAUDE_MODEL,
-      claudeInputTokens: result.inputTokens,
-      claudeOutputTokens: result.outputTokens,
-      claudeCacheReadTokens: result.cacheReadTokens,
-      rawAiResponseJson: JSON.stringify(result.data),
-      overallNotes: result.data.summary.overall_notes,
+      auditReview: auditReviewResult
+        ? {
+            categoriesChecked: toCategoriesChecked(auditReviewResult.data.categories),
+            claudeModel: CLAUDE_MODEL,
+            claudeInputTokens: auditReviewResult.inputTokens,
+            claudeOutputTokens: auditReviewResult.outputTokens,
+            claudeCacheReadTokens: auditReviewResult.cacheReadTokens,
+            rawAiResponseJson: JSON.stringify(auditReviewResult.data),
+            overallNotes: auditReviewResult.data.summary.overall_notes,
+          }
+        : undefined,
+      riskAnalysis: riskAnalysisResult ?? undefined,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi không xác định khi xử lý kiểm tra.";

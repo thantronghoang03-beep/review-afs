@@ -58,6 +58,8 @@ export async function POST(request: Request) {
     isDissolution: formData.get("isDissolution") === "true",
     ercChanged: formData.get("ercChanged") || "na",
     ircChanged: formData.get("ircChanged") || "na",
+    runAuditReview: formData.get("runAuditReview") === "true",
+    runRiskAnalysis: formData.get("runRiskAnalysis") === "true",
   });
 
   if (!fields.success) {
@@ -141,6 +143,8 @@ export async function POST(request: Request) {
       fileIrcOriginalPath,
       fileLegalDossierPaths,
     },
+    runAuditReview: data.runAuditReview,
+    runRiskAnalysis: data.runRiskAnalysis,
   });
 
   // Fire-and-forget: runCheckJob catches all errors internally and persists them to the DB row.

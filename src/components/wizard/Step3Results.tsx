@@ -6,6 +6,7 @@ import { StatsCards } from "@/components/results/StatsCards";
 import { StatusLegend } from "@/components/results/StatusLegend";
 import { ErrorDonutChart } from "@/components/results/ErrorDonutChart";
 import { FindingsTable } from "@/components/results/FindingsTable";
+import { RiskAnalysisSection } from "@/components/results/RiskAnalysisSection";
 import { DownloadIcon, FileSpreadsheetIcon, FileTextIcon, PlusCircleIcon } from "@/components/ui/icons";
 import Link from "next/link";
 
@@ -43,46 +44,58 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
         </div>
       )}
 
-      <StatusLegend />
+      {check.runAuditReview && (
+        <>
+          <StatusLegend />
 
-      <StatsCards findings={findings} />
+          <StatsCards findings={findings} />
 
-      {check.overallNotes && (
-        <div className="rounded-2xl border border-jpa-teal/30 bg-jpa-teal/10 p-4 text-sm text-jpa-700">
-          <div className="mb-1 text-xs font-bold uppercase tracking-wide text-jpa-teal">Tóm tắt kết quả review</div>
-          {check.overallNotes}
-        </div>
+          {check.overallNotes && (
+            <div className="rounded-2xl border border-jpa-teal/30 bg-jpa-teal/10 p-4 text-sm text-jpa-700">
+              <div className="mb-1 text-xs font-bold uppercase tracking-wide text-jpa-teal">
+                Tóm tắt kết quả review
+              </div>
+              {check.overallNotes}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+            <h4 className="mb-4 text-sm font-bold text-zinc-800">Phân loại lỗi</h4>
+            <ErrorDonutChart findings={findings} />
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+            <h4 className="mb-4 text-sm font-bold text-zinc-800">Chi tiết lỗi</h4>
+            <FindingsTable findings={findings} />
+          </div>
+        </>
       )}
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h4 className="mb-4 text-sm font-bold text-zinc-800">Phân loại lỗi</h4>
-        <ErrorDonutChart findings={findings} />
-      </div>
-
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h4 className="mb-4 text-sm font-bold text-zinc-800">Chi tiết lỗi</h4>
-        <FindingsTable findings={findings} />
-      </div>
+      {check.runRiskAnalysis && check.riskAnalysis && <RiskAnalysisSection analysis={check.riskAnalysis} />}
 
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-zinc-200 bg-white p-4">
-        <a
-          href={`/api/checks/${check.id}/export-pdf`}
-          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          <DownloadIcon size={16} /> Xuất báo cáo lỗi (PDF)
-        </a>
-        <a
-          href={`/api/checks/${check.id}/export-xlsx`}
-          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          <FileSpreadsheetIcon size={16} /> Xuất file chi tiết (Excel)
-        </a>
-        <a
-          href={`/api/checks/${check.id}/export-html`}
-          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          <FileTextIcon size={16} /> Xuất báo cáo (HTML)
-        </a>
+        {check.runAuditReview && (
+          <>
+            <a
+              href={`/api/checks/${check.id}/export-pdf`}
+              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <DownloadIcon size={16} /> Xuất báo cáo lỗi (PDF)
+            </a>
+            <a
+              href={`/api/checks/${check.id}/export-xlsx`}
+              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <FileSpreadsheetIcon size={16} /> Xuất file chi tiết (Excel)
+            </a>
+            <a
+              href={`/api/checks/${check.id}/export-html`}
+              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              <FileTextIcon size={16} /> Xuất báo cáo (HTML)
+            </a>
+          </>
+        )}
         <Link
           href="/new-check"
           className="flex items-center gap-2 rounded-lg bg-jpa-600 px-4 py-2 text-sm font-medium text-white hover:bg-jpa-700"

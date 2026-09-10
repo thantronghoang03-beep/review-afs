@@ -1,4 +1,5 @@
 import type { CategoriesChecked } from "./finding";
+import type { RiskAnalysis } from "./risk";
 
 export type CheckStatus = "processing" | "done" | "error";
 
@@ -50,6 +51,11 @@ export interface Check extends CheckFilePaths {
   // Mục 14 điểm 5 (v6.1) — tóm tắt ngắn gọn cuối cùng của AI về lượt review, hiển thị
   // trong note-box trên trang kết quả. Null khi check chưa done.
   overallNotes: string | null;
+
+  // Người dùng chọn chạy tác vụ nào khi tạo kiểm tra mới — ít nhất 1 trong 2 phải bật.
+  runAuditReview: boolean;
+  runRiskAnalysis: boolean;
+  riskAnalysis: RiskAnalysis | null;
 
   createdAt: string;
   startedAt: string | null;

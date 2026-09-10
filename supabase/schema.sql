@@ -45,6 +45,13 @@ create table if not exists checks (
   -- v6.1 Mục 14 điểm 5: tóm tắt cuối lượt review, hiển thị trong note-box.
   overall_notes            text,
 
+  -- Người dùng chọn chạy tác vụ nào khi tạo kiểm tra mới (ít nhất 1 trong 2 phải bật).
+  -- "Phân tích rủi ro báo cáo tài chính" là một tính năng độc lập với review v6.1 —
+  -- tính tỷ số tài chính + cảnh báo rủi ro, không liên quan đối chiếu VN/EN.
+  run_audit_review         boolean not null default true,
+  run_risk_analysis        boolean not null default false,
+  risk_analysis_json       jsonb,
+
   created_at               timestamptz not null default now(),
   started_at               timestamptz,
   completed_at             timestamptz
@@ -79,6 +86,9 @@ create table if not exists findings (
 alter table checks add column if not exists file_legal_dossier_paths jsonb;
 alter table findings add column if not exists group_name text;
 alter table checks add column if not exists overall_notes text;
+alter table checks add column if not exists run_audit_review boolean not null default true;
+alter table checks add column if not exists run_risk_analysis boolean not null default false;
+alter table checks add column if not exists risk_analysis_json jsonb;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);
