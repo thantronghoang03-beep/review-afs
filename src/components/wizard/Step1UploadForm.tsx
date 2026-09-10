@@ -20,7 +20,6 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
   const [creatingCompany, setCreatingCompany] = useState(false);
-  const [fiscalYear, setFiscalYear] = useState(String(new Date().getFullYear()));
   const [periodCurrentStart, setPeriodCurrentStart] = useState("");
   const [periodCurrentEnd, setPeriodCurrentEnd] = useState("");
   const [isFirstPeriod, setIsFirstPeriod] = useState(false);
@@ -35,9 +34,9 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   const [fileErcOriginal, setFileErcOriginal] = useState<File | null>(null);
   const [fileIrcLatest, setFileIrcLatest] = useState<File | null>(null);
   const [fileIrcOriginal, setFileIrcOriginal] = useState<File | null>(null);
-  // v6.1 — Mục 15 (đối chiếu phiên bản liền kề) và Mục 9A (hồ sơ pháp lý mở rộng), cả
-  // hai tùy chọn: bỏ trống → model tự bỏ qua đúng như prompt mô tả.
-  const [fileDraftPrev, setFileDraftPrev] = useState<File | null>(null);
+  // v6.1 — Mục 9A (hồ sơ pháp lý mở rộng), tùy chọn: bỏ trống → model tự bỏ qua đúng
+  // như prompt mô tả. Mục 15 (đối chiếu phiên bản liền kề) không cần upload thủ công
+  // nữa — server tự lấy bản báo cáo gần nhất trước đó đã tải lên cho cùng công ty này.
   const [filesLegalDossier, setFilesLegalDossier] = useState<File[]>([]);
   const [showExtraInputs, setShowExtraInputs] = useState(false);
   // Per master prompt §"Logic xử lý ghi chú ERC/IRC": N/A → no warning needed;
@@ -49,7 +48,6 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
 
   const canSubmit =
     selectedCompany &&
-    fiscalYear.trim() &&
     periodCurrentStart &&
     periodCurrentEnd &&
     fileVn &&
@@ -65,7 +63,8 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     formData.set("companyId", selectedCompany.id);
     formData.set("clientName", selectedCompany.name);
     formData.set("createdBy", user?.name ?? "");
-    formData.set("fiscalYear", fiscalYear.trim());
+    // Năm tài chính không còn nhập tay — lấy theo năm kết thúc kỳ kế toán năm nay.
+    formData.set("fiscalYear", periodCurrentEnd.slice(0, 4));
     formData.set("periodCurrentStart", periodCurrentStart);
     formData.set("periodCurrentEnd", periodCurrentEnd);
     formData.set("periodPriorStart", isFirstPeriod ? "" : periodPriorStart);
@@ -79,7 +78,6 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     if (fileIrcOriginal) formData.set("fileIrcOriginal", fileIrcOriginal);
     formData.set("ercChanged", fileErcLatest ? ercChanged : "na");
     formData.set("ircChanged", fileIrcLatest ? ircChanged : "na");
-    if (fileDraftPrev) formData.set("fileDraftPrev", fileDraftPrev);
     filesLegalDossier.forEach((f) => formData.append("fileLegalDossier", f));
 
     onSubmit(formData);
@@ -146,17 +144,6 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
                 </button>
               </div>
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-zinc-500">Năm tài chính</label>
-              <input
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
-                value={fiscalYear}
-                onChange={(e) => setFiscalYear(e.target.value)}
-              />
-            </div>
           </div>
 
           <div>
@@ -338,20 +325,10 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
             onClick={() => setShowExtraInputs((v) => !v)}
             className="text-xs font-medium text-jpa-600 hover:underline"
           >
-            {showExtraInputs ? "Ẩn" : "+ Thêm"} Bản Draft/Issue liền kề & Hồ sơ pháp lý mở rộng (tùy chọn — Mục 9A,
-            15 master prompt v6.1)
+            {showExtraInputs ? "Ẩn" : "+ Thêm"} Hồ sơ pháp lý mở rộng (tùy chọn — Mục 9A master prompt v6.1)
           </button>
           {showExtraInputs && (
             <div className="mt-3 space-y-4">
-              <div>
-                <FileDropSlot
-                  label="Bản Draft/Issue liền kề trước đó"
-                  sublabel="Dùng để đối chiếu phiên bản — bỏ trống nếu không có"
-                  file={fileDraftPrev}
-                  onChange={setFileDraftPrev}
-                />
-              </div>
-
               <div>
                 <div className="mb-1.5 text-xs text-zinc-500">
                   Hồ sơ pháp lý mở rộng (giấy phép con, quyết định ưu đãi thuế, hợp đồng thuê đất...) — có thể
@@ -421,7 +398,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
               <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format, thuật ngữ chuẩn JPA</li>
               <li>Đối chiếu ERC/IRC và hồ sơ pháp lý mở rộng (nếu có cung cấp)</li>
               <li>Tra cứu online hiệu lực Luật/Nghị định/Thông tư được trích dẫn</li>
-              <li>Đối chiếu với bản Draft/Issue liền kề trước đó (nếu có cung cấp)</li>
+              <li>Tự động đối chiếu với báo cáo gần nhất đã tải lên trước đó cho cùng công ty này (nếu có)</li>
             </ul>
             <p className="text-zinc-400">Thời gian xử lý tùy theo độ dài báo cáo, thường từ 1-3 phút.</p>
           </div>

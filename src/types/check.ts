@@ -18,9 +18,10 @@ export interface CheckFilePaths {
   fileErcOriginalPath: string | null;
   fileIrcLatestPath: string | null;
   fileIrcOriginalPath: string | null;
-  // Master Prompt v6.1 — Mục 15 (đối chiếu phiên bản liền kề) và Mục 9A (hồ sơ pháp lý
-  // mở rộng: giấy phép con, ưu đãi thuế, hợp đồng thuê đất...). Cả hai tùy chọn.
-  fileDraftPrevPath: string | null;
+  // Master Prompt v6.1 — Mục 9A (hồ sơ pháp lý mở rộng: giấy phép con, ưu đãi thuế,
+  // hợp đồng thuê đất...), tùy chọn. Mục 15 (đối chiếu phiên bản liền kề) không cần
+  // file riêng — server tự lấy báo cáo gần nhất trước đó của cùng công ty, xem
+  // getPreviousCheckForCompany() trong checks-repository.ts.
   fileLegalDossierPaths: string[];
 }
 

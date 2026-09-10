@@ -26,9 +26,10 @@ create table if not exists checks (
   file_erc_original_path  text,
   file_irc_latest_path    text,
   file_irc_original_path  text,
-  -- v6.1: bản Draft/Issue liền kề trước đó (Mục 15) và hồ sơ pháp lý mở rộng — giấy phép
-  -- con, ưu đãi thuế, hợp đồng thuê đất... (Mục 9A). Cả hai đều tùy chọn.
-  file_draft_prev_path        text,
+  -- v6.1: hồ sơ pháp lý mở rộng — giấy phép con, ưu đãi thuế, hợp đồng thuê đất...
+  -- (Mục 9A), tùy chọn, có thể nhiều file. (Mục 15 — đối chiếu phiên bản liền kề —
+  -- không cần cột riêng: server tự lấy báo cáo hoàn tất gần nhất trước đó của cùng
+  -- công ty, xem getPreviousCheckForCompany() trong checks-repository.ts.)
   file_legal_dossier_paths    jsonb,
 
   status                   text not null default 'processing',
@@ -63,10 +64,12 @@ create table if not exists findings (
   display_order integer not null default 0
 );
 
--- v6.1: adds two optional file columns to a `checks` table created by an earlier
+-- v6.1: adds the legal-dossier column to a `checks` table created by an earlier
 -- version of this schema. `create table if not exists` above is a no-op once the table
--- already exists, so these ALTERs are what actually apply the new columns on re-run.
-alter table checks add column if not exists file_draft_prev_path text;
+-- already exists, so this ALTER is what actually applies the new column on re-run.
+-- (An earlier revision of this file also added file_draft_prev_path — since dropped
+-- from the app; if you already ran that version the column is simply unused now, safe
+-- to leave or `alter table checks drop column if exists file_draft_prev_path;`.)
 alter table checks add column if not exists file_legal_dossier_paths jsonb;
 
 create index if not exists idx_findings_check_id on findings(check_id);

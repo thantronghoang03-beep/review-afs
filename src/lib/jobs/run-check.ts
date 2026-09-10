@@ -1,7 +1,13 @@
 import { extractPdfPages } from "@/lib/pdf/extract";
 import { buildPageDelimitedDocument } from "@/lib/pdf/build-document";
 import { runReview } from "@/lib/ai/review";
-import { markCheckDone, markCheckError, markCheckStarted, getCheck } from "@/lib/db/checks-repository";
+import {
+  markCheckDone,
+  markCheckError,
+  markCheckStarted,
+  getCheck,
+  getPreviousCheckForCompany,
+} from "@/lib/db/checks-repository";
 import { insertFindings } from "@/lib/db/findings-repository";
 import { downloadFile } from "@/lib/storage/supabase-storage";
 import { CLAUDE_MODEL } from "@/lib/ai/client";
@@ -66,10 +72,23 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
       ircDocument = parts.join("\n\n");
     }
 
-    // v6.1 — Mục 15: bản Draft/Issue liền kề trước đó, tùy chọn.
-    const draftDocument = check.fileDraftPrevPath
-      ? buildPageDelimitedDocument("DRAFT-PREV", await extractFromStorage(check.fileDraftPrevPath))
-      : null;
+    // v6.1 — Mục 15: đối chiếu phiên bản liền kề. Không cần upload riêng — tự lấy lượt
+    // kiểm tra hoàn tất gần nhất trước đó của CÙNG công ty (nếu có) và dùng chính báo
+    // cáo VN/EN đã tải lên ở lượt đó làm bản đối chiếu.
+    let draftDocument: string | null = null;
+    if (check.companyId) {
+      const previousCheck = await getPreviousCheckForCompany(check.companyId, checkId);
+      if (previousCheck) {
+        const [prevVn, prevEn] = await Promise.all([
+          extractFromStorage(previousCheck.fileVnPath),
+          extractFromStorage(previousCheck.fileEnPath),
+        ]);
+        draftDocument = [
+          buildPageDelimitedDocument("DRAFT-PREV-VN", prevVn),
+          buildPageDelimitedDocument("DRAFT-PREV-EN", prevEn),
+        ].join("\n\n");
+      }
+    }
 
     // v6.1 — Mục 9A: hồ sơ pháp lý mở rộng, có thể nhiều file — ghép lại thành một khối.
     let legalDossierDocument: string | null = null;

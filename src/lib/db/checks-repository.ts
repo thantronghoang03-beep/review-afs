@@ -46,7 +46,6 @@ function rowToCheck(row: Record<string, unknown>): Check {
     fileErcOriginalPath: (row.file_erc_original_path as string) ?? null,
     fileIrcLatestPath: (row.file_irc_latest_path as string) ?? null,
     fileIrcOriginalPath: (row.file_irc_original_path as string) ?? null,
-    fileDraftPrevPath: (row.file_draft_prev_path as string) ?? null,
     fileLegalDossierPaths: (row.file_legal_dossier_paths as string[]) ?? [],
     status: row.status as CheckStatus,
     errorMessage: (row.error_message as string) ?? null,
@@ -80,7 +79,6 @@ export async function createCheck(input: CreateCheckInput): Promise<Check> {
     file_erc_original_path: input.files.fileErcOriginalPath,
     file_irc_latest_path: input.files.fileIrcLatestPath,
     file_irc_original_path: input.files.fileIrcOriginalPath,
-    file_draft_prev_path: input.files.fileDraftPrevPath,
     file_legal_dossier_paths: input.files.fileLegalDossierPaths,
     status: "processing",
   });
@@ -210,6 +208,28 @@ export async function countChecksSince(isoDate: string): Promise<number> {
     .gte("created_at", isoDate);
   if (error) throw error;
   return count ?? 0;
+}
+
+// Master Prompt v6.1 — Mục 15 (đối chiếu phiên bản liền kề): thay vì bắt người dùng
+// upload lại một bản Draft/Issue riêng, tự lấy lượt kiểm tra hoàn tất gần nhất trước
+// đó của CÙNG công ty để dùng làm bản đối chiếu — tận dụng chính báo cáo VN/EN đã tải
+// lên ở lượt kiểm tra trước.
+export async function getPreviousCheckForCompany(
+  companyId: string,
+  excludeCheckId: string
+): Promise<Check | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("checks")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("status", "done")
+    .neq("id", excludeCheckId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? rowToCheck(data) : null;
 }
 
 export async function listDistinctReviewers(): Promise<string[]> {
