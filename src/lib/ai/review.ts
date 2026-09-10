@@ -2,6 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient, CLAUDE_MODEL, MAX_INPUT_TOKENS } from "./client";
 import { buildSystemPrompt } from "./system-prompt";
 import { findingsInputSchema, findingsResponseZod, type FindingsResponse } from "./findings-schema";
+import { isMockReviewEnabled, buildMockFindingsResponse } from "./mock-review";
 import type { PeriodType } from "@/types/check";
 
 interface ReviewInput {
@@ -143,6 +144,27 @@ function extractToolUse(response: Anthropic.Message): Anthropic.ToolUseBlock | n
 }
 
 export async function runReview(input: ReviewInput): Promise<ReviewResult> {
+  // Chế độ thử nghiệm không cần ANTHROPIC_API_KEY và không gọi Claude — trả về ngay
+  // một bộ finding mẫu cố định để test luồng xử lý/giao diện. Bật bằng biến môi
+  // trường MOCK_AI_REVIEW=true trong .env.local.
+  if (isMockReviewEnabled()) {
+    // Giả lập độ trễ xử lý thật để trạng thái "Đang xử lý" trên UI có thời gian hiển thị.
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return {
+      data: buildMockFindingsResponse({
+        clientName: input.clientName,
+        periodType: input.periodType,
+        ercDocument: input.ercDocument,
+        ircDocument: input.ircDocument,
+        legalDossierDocument: input.legalDossierDocument,
+        draftDocument: input.draftDocument,
+      }),
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+    };
+  }
+
   const tokenCount = await countReviewTokens(input);
   if (tokenCount > MAX_INPUT_TOKENS) {
     throw new ReviewInputTooLargeError(tokenCount);
