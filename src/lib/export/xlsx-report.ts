@@ -2,15 +2,16 @@ import ExcelJS from "exceljs";
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding, FindingStatus } from "@/types/finding";
-import { STATUS_LABELS } from "@/types/finding";
+import { STATUS_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { formatDate, formatDateTime } from "@/lib/format/date";
 
 const STATUS_FILL: Record<FindingStatus, string> = {
-  match: "FFDCFCE7",
-  difference: "FFFECACA",
+  pass: "FFDCFCE7",
+  error: "FFFECACA",
   warning: "FFFEF08A",
   missing_in_en: "FFBFDBFE",
   needs_supplementing: "FFFED7AA",
+  critical: "FFE9D5FF",
 };
 
 function pageLabel(f: Finding): string {
@@ -58,21 +59,22 @@ export async function generateXlsxReport(check: Check, findings: Finding[]): Pro
   });
 
   findings
-    .filter((f) => f.status !== "match")
+    .filter((f) => normalizeFindingStatus(f.status) !== "pass")
     .forEach((f, i) => {
+      const status = normalizeFindingStatus(f.status);
       const row = sheet.addRow({
         idx: i + 1,
         section: f.section,
         contentVn: f.contentVn ?? "",
         contentEn: f.contentEn ?? "",
         page: pageLabel(f),
-        status: STATUS_LABELS[f.status],
+        status: STATUS_LABELS[status],
         note: f.note ?? "",
       });
       row.getCell("status").fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: STATUS_FILL[f.status] },
+        fgColor: { argb: STATUS_FILL[status] },
       };
       row.alignment = { vertical: "top", wrapText: true };
     });

@@ -18,6 +18,10 @@ export interface CheckFilePaths {
   fileErcOriginalPath: string | null;
   fileIrcLatestPath: string | null;
   fileIrcOriginalPath: string | null;
+  // Master Prompt v6.1 — Mục 15 (đối chiếu phiên bản liền kề) và Mục 9A (hồ sơ pháp lý
+  // mở rộng: giấy phép con, ưu đãi thuế, hợp đồng thuê đất...). Cả hai tùy chọn.
+  fileDraftPrevPath: string | null;
+  fileLegalDossierPaths: string[];
 }
 
 export interface Check extends CheckFilePaths {

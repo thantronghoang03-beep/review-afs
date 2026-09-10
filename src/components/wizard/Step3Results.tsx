@@ -3,6 +3,7 @@ import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding } from "@/types/finding";
 import { CATEGORY_LABELS } from "@/types/finding";
 import { StatsCards } from "@/components/results/StatsCards";
+import { StatusLegend } from "@/components/results/StatusLegend";
 import { ErrorDonutChart } from "@/components/results/ErrorDonutChart";
 import { FindingsTable } from "@/components/results/FindingsTable";
 import { DownloadIcon, FileSpreadsheetIcon, FileTextIcon, PlusCircleIcon } from "@/components/ui/icons";
@@ -41,6 +42,8 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
             .join("; ")}
         </div>
       )}
+
+      <StatusLegend />
 
       <StatsCards findings={findings} />
 

@@ -1,15 +1,32 @@
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding, FindingStatus } from "@/types/finding";
-import { STATUS_LABELS, SEVERITY_LABELS, CATEGORY_LABELS } from "@/types/finding";
+import {
+  STATUS_LABELS,
+  STATUS_LEGEND,
+  SEVERITY_LABELS,
+  CATEGORY_LABELS,
+  normalizeFindingStatus,
+} from "@/types/finding";
 import { formatDateTime } from "@/lib/format/date";
 
+// Mục 7.6 / Mục 14 — Legend bắt buộc, luôn đủ 6 trạng thái, không phụ thuộc dữ liệu.
+const LEGEND_STATUS_ORDER: FindingStatus[] = [
+  "pass",
+  "error",
+  "warning",
+  "missing_in_en",
+  "needs_supplementing",
+  "critical",
+];
+
 const STATUS_COLORS: Record<FindingStatus, string> = {
-  match: "#16a34a",
-  difference: "#dc2626",
+  pass: "#16a34a",
+  error: "#dc2626",
   warning: "#ca8a04",
   missing_in_en: "#2563eb",
   needs_supplementing: "#ea580c",
+  critical: "#581c87",
 };
 
 function escapeHtml(value: string | null | undefined): string {
@@ -29,7 +46,7 @@ function pageLabel(f: Finding): string {
 }
 
 export function generateHtmlReport(check: Check, findings: Finding[]): string {
-  const errorFindings = findings.filter((f) => f.status !== "match");
+  const errorFindings = findings.filter((f) => normalizeFindingStatus(f.status) !== "pass");
   const critical = errorFindings.filter((f) => f.severity === "critical").length;
   const medium = errorFindings.filter((f) => f.severity === "medium").length;
   const minor = errorFindings.filter((f) => f.severity === "minor").length;
@@ -37,24 +54,33 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   const statusCounts = (Object.keys(STATUS_LABELS) as FindingStatus[]).map((status) => ({
     status,
     label: STATUS_LABELS[status],
-    count: findings.filter((f) => f.status === status).length,
+    count: findings.filter((f) => normalizeFindingStatus(f.status) === status).length,
   }));
 
   const rows = findings
-    .map(
-      (f, i) => `
-      <tr data-status="${f.status}">
+    .map((f, i) => {
+      const status = normalizeFindingStatus(f.status);
+      return `
+      <tr data-status="${status}">
         <td>${i + 1}</td>
         <td><div class="field">${escapeHtml(f.fieldLabel)}</div><div class="muted">${escapeHtml(f.section)} · ${escapeHtml(CATEGORY_LABELS[f.category])}</div></td>
         <td class="nowrap">${escapeHtml(pageLabel(f))}</td>
         <td>${escapeHtml(f.contentVn)}</td>
         <td>${escapeHtml(f.contentEn)}</td>
-        <td><span class="badge" style="background:${STATUS_COLORS[f.status]}1a;color:${STATUS_COLORS[f.status]}">${escapeHtml(STATUS_LABELS[f.status])}</span></td>
+        <td><span class="badge" style="background:${STATUS_COLORS[status]}1a;color:${STATUS_COLORS[status]}">${escapeHtml(STATUS_LABELS[status])}</span></td>
         <td>${f.severity ? escapeHtml(SEVERITY_LABELS[f.severity]) : "—"}</td>
         <td>${escapeHtml(f.note)}</td>
-      </tr>`
-    )
+      </tr>`;
+    })
     .join("");
+
+  const legendItems = LEGEND_STATUS_ORDER.map(
+    (status) => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${STATUS_COLORS[status]}"></span>
+        <div><div class="name">${escapeHtml(STATUS_LABELS[status])}</div><div class="desc">${escapeHtml(STATUS_LEGEND[status])}</div></div>
+      </div>`
+  ).join("");
 
   const filterButtons = [{ status: "all", label: "Tất cả" }, ...statusCounts.map((s) => ({ status: s.status, label: s.label }))]
     .map(
@@ -98,6 +124,13 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; display: inline-block; }
   .nowrap { white-space: nowrap; }
   .footer { text-align: center; font-size: 11px; color: #a1a1aa; margin-top: 16px; }
+  .legend { margin-bottom: 16px; }
+  .legend h2 { font-size: 13px; margin: 0 0 10px; color: #27272a; }
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .legend-item { display: flex; align-items: flex-start; gap: 8px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .legend-item .name { font-size: 12px; font-weight: 600; color: #27272a; }
+  .legend-item .desc { font-size: 11px; color: #71717a; }
 </style>
 </head>
 <body>
@@ -107,6 +140,11 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
       <p>${escapeHtml(check.clientName)} · Năm tài chính ${escapeHtml(check.fiscalYear)}${check.createdBy ? ` · Người kiểm tra: ${escapeHtml(check.createdBy)}` : ""} · Xuất lúc ${formatDateTime(new Date().toISOString())}</p>
     </div>
     <span class="period-badge">${escapeHtml(PERIOD_TYPE_LABELS[check.periodType])}</span>
+  </div>
+
+  <div class="card legend">
+    <h2>Lưu ý — Ý nghĩa các trạng thái</h2>
+    <div class="legend-grid">${legendItems}</div>
   </div>
 
   <div class="stats">
@@ -129,7 +167,7 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
     </table>
   </div>
 
-  <p class="footer">Tạo bởi Review AFS — JPA Vietvalues, theo Master Prompt v5.0</p>
+  <p class="footer">Tạo bởi Review AFS — JPA Vietvalues, theo Master Prompt v6.1</p>
 
   <script>
     function applyFilter(status) {

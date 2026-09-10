@@ -2,7 +2,7 @@ import PDFDocument from "pdfkit";
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding } from "@/types/finding";
-import { STATUS_LABELS } from "@/types/finding";
+import { STATUS_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { formatDateTime } from "@/lib/format/date";
 
 function pageLabel(f: Finding): string {
@@ -13,7 +13,7 @@ function pageLabel(f: Finding): string {
 }
 
 export async function generatePdfReport(check: Check, findings: Finding[]): Promise<Buffer> {
-  const errorFindings = findings.filter((f) => f.status !== "match");
+  const errorFindings = findings.filter((f) => normalizeFindingStatus(f.status) !== "pass");
 
   const doc = new PDFDocument({ size: "A4", margin: 40 });
   const chunks: Buffer[] = [];
@@ -86,7 +86,7 @@ export async function generatePdfReport(check: Check, findings: Finding[]): Prom
     x += colWidths.label;
     doc.text(pageLabel(f), x, y + 3, { width: colWidths.page });
     x += colWidths.page;
-    doc.text(STATUS_LABELS[f.status], x, y + 3, { width: colWidths.status });
+    doc.text(STATUS_LABELS[normalizeFindingStatus(f.status)], x, y + 3, { width: colWidths.status });
     x += colWidths.status;
     doc.text(f.note ?? "", x, y + 3, { width: colWidths.note, height: rowHeight });
     doc.moveTo(startX, y + rowHeight).lineTo(startX + 515, y + rowHeight).strokeColor("#ddd").stroke();

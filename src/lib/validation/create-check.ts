@@ -18,6 +18,22 @@ export const createCheckFieldsSchema = z.object({
 
 export type CreateCheckFields = z.infer<typeof createCheckFieldsSchema>;
 
+export function validateUploadedFiles(
+  files: File[],
+  fieldLabel: string,
+  required: boolean
+): string | null {
+  const real = files.filter((f) => f.size > 0);
+  if (real.length === 0) {
+    return required ? `${fieldLabel} là bắt buộc.` : null;
+  }
+  for (const file of real) {
+    const err = validateUploadedFile(file, fieldLabel, false);
+    if (err) return err;
+  }
+  return null;
+}
+
 export function validateUploadedFile(
   file: File | null,
   fieldLabel: string,

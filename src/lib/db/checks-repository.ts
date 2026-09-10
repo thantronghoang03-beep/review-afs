@@ -46,6 +46,8 @@ function rowToCheck(row: Record<string, unknown>): Check {
     fileErcOriginalPath: (row.file_erc_original_path as string) ?? null,
     fileIrcLatestPath: (row.file_irc_latest_path as string) ?? null,
     fileIrcOriginalPath: (row.file_irc_original_path as string) ?? null,
+    fileDraftPrevPath: (row.file_draft_prev_path as string) ?? null,
+    fileLegalDossierPaths: (row.file_legal_dossier_paths as string[]) ?? [],
     status: row.status as CheckStatus,
     errorMessage: (row.error_message as string) ?? null,
     categoriesChecked: (row.categories_checked_json as CategoriesChecked) ?? null,
@@ -78,6 +80,8 @@ export async function createCheck(input: CreateCheckInput): Promise<Check> {
     file_erc_original_path: input.files.fileErcOriginalPath,
     file_irc_latest_path: input.files.fileIrcLatestPath,
     file_irc_original_path: input.files.fileIrcOriginalPath,
+    file_draft_prev_path: input.files.fileDraftPrevPath,
+    file_legal_dossier_paths: input.files.fileLegalDossierPaths,
     status: "processing",
   });
   if (error) throw error;
@@ -169,7 +173,9 @@ export async function listChecks(filters: CheckListFilters = {}): Promise<CheckL
   for (const f of findings ?? []) {
     const checkId = f.check_id as string;
     const bucket = countsByCheck.get(checkId) ?? { total: 0, critical: 0, medium: 0, minor: 0 };
-    if (f.status !== "match") bucket.total += 1;
+    // "match" is the legacy (pre-v6.1) name for what is now "pass" — findings created
+    // before the rollout still carry it in the DB.
+    if (f.status !== "match" && f.status !== "pass") bucket.total += 1;
     if (f.severity === "critical") bucket.critical += 1;
     if (f.severity === "medium") bucket.medium += 1;
     if (f.severity === "minor") bucket.minor += 1;

@@ -27,12 +27,14 @@ export const findingsInputSchema = {
     categories: {
       type: "object",
       additionalProperties: false,
-      required: ["so_lieu", "chinh_ta", "format", "erc_irc", "khac"],
+      required: ["so_lieu", "chinh_ta", "format", "erc_irc", "phap_ly", "doi_chieu", "khac"],
       properties: {
         so_lieu: categoryStatusSchema,
         chinh_ta: categoryStatusSchema,
         format: categoryStatusSchema,
         erc_irc: categoryStatusSchema,
+        phap_ly: categoryStatusSchema,
+        doi_chieu: categoryStatusSchema,
         khac: categoryStatusSchema,
       },
     },
@@ -55,7 +57,7 @@ export const findingsInputSchema = {
         properties: {
           section: {
             type: "string",
-            description: "Master-prompt section reference, e.g. '11.2' or '8.7'.",
+            description: "Master-prompt section reference, e.g. '11.2', '8.7', '9B', '15'.",
           },
           field_label: { type: "string", description: "Mục kiểm tra — short label for this checked item." },
           page_vn: { type: ["integer", "null"] },
@@ -64,11 +66,11 @@ export const findingsInputSchema = {
           content_en: { type: ["string", "null"] },
           status: {
             type: "string",
-            enum: ["match", "difference", "warning", "missing_in_en", "needs_supplementing"],
+            enum: ["pass", "error", "warning", "missing_in_en", "needs_supplementing", "critical"],
           },
           category: {
             type: "string",
-            enum: ["so_lieu", "chinh_ta", "format", "erc_irc", "khac"],
+            enum: ["so_lieu", "chinh_ta", "format", "erc_irc", "phap_ly", "doi_chieu", "khac"],
           },
           note: { type: "string", description: "Ghi chú — explanation, matches master prompt's note format." },
         },
@@ -131,6 +133,8 @@ export const findingsResponseZod = z.object({
     chinh_ta: categoryStatusZod,
     format: categoryStatusZod,
     erc_irc: categoryStatusZod,
+    phap_ly: categoryStatusZod,
+    doi_chieu: categoryStatusZod,
     khac: categoryStatusZod,
   }),
   findings: z.array(
@@ -141,8 +145,23 @@ export const findingsResponseZod = z.object({
       page_en: lenientNullableInt,
       content_vn: lenientNullableString,
       content_en: lenientNullableString,
-      status: lenientEnum(["match", "difference", "warning", "missing_in_en", "needs_supplementing"] as const),
-      category: lenientEnum(["so_lieu", "chinh_ta", "format", "erc_irc", "khac"] as const),
+      status: lenientEnum([
+        "pass",
+        "error",
+        "warning",
+        "missing_in_en",
+        "needs_supplementing",
+        "critical",
+      ] as const),
+      category: lenientEnum([
+        "so_lieu",
+        "chinh_ta",
+        "format",
+        "erc_irc",
+        "phap_ly",
+        "doi_chieu",
+        "khac",
+      ] as const),
       note: lenientString,
     })
   ),

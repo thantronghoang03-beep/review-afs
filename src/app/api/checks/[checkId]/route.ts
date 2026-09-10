@@ -31,6 +31,8 @@ export async function DELETE(_req: Request, ctx: Params) {
       check.fileErcOriginalPath,
       check.fileIrcLatestPath,
       check.fileIrcOriginalPath,
+      check.fileDraftPrevPath,
+      ...check.fileLegalDossierPaths,
     ].filter((p): p is string => Boolean(p));
     await deleteFiles(paths);
   }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createCheck, generateCheckId, listChecks } from "@/lib/db/checks-repository";
 import { uploadFile, uploadPathFor } from "@/lib/storage/supabase-storage";
 import { computePeriodType } from "@/lib/ai/period-type";
-import { createCheckFieldsSchema, validateUploadedFile } from "@/lib/validation/create-check";
+import { createCheckFieldsSchema, validateUploadedFile, validateUploadedFiles } from "@/lib/validation/create-check";
 import { runCheckJob } from "@/lib/jobs/run-check";
 import type { CheckStatus, PeriodType } from "@/types/check";
 
@@ -73,6 +73,11 @@ export async function POST(request: Request) {
   const fileErcOriginal = formData.get("fileErcOriginal") as File | null;
   const fileIrcLatest = formData.get("fileIrcLatest") as File | null;
   const fileIrcOriginal = formData.get("fileIrcOriginal") as File | null;
+  // v6.1 — Mục 15 (bản Draft/Issue liền kề) và Mục 9A (hồ sơ pháp lý mở rộng), cả hai
+  // tùy chọn; hồ sơ pháp lý có thể là nhiều file (giấy phép con, ưu đãi thuế, hợp đồng
+  // thuê đất...) nên gửi nhiều entry cùng field name "fileLegalDossier".
+  const fileDraftPrev = formData.get("fileDraftPrev") as File | null;
+  const filesLegalDossier = formData.getAll("fileLegalDossier") as File[];
 
   const fileErrors = [
     validateUploadedFile(fileVn, "BCTC Tiếng Việt", true),
@@ -81,6 +86,8 @@ export async function POST(request: Request) {
     validateUploadedFile(fileErcOriginal, "ERC (bản gốc)", false),
     validateUploadedFile(fileIrcLatest, "IRC (mới nhất)", false),
     validateUploadedFile(fileIrcOriginal, "IRC (bản gốc)", false),
+    validateUploadedFile(fileDraftPrev, "Bản Draft/Issue liền kề trước đó", false),
+    validateUploadedFiles(filesLegalDossier, "Hồ sơ pháp lý mở rộng", false),
   ].filter((e): e is string => e !== null);
 
   if (fileErrors.length > 0) {
@@ -110,6 +117,12 @@ export async function POST(request: Request) {
     fileIrcOriginal && fileIrcOriginal.size > 0
       ? await saveFile(checkId, fileIrcOriginal, "irc_original.pdf")
       : null;
+  const fileDraftPrevPath =
+    fileDraftPrev && fileDraftPrev.size > 0 ? await saveFile(checkId, fileDraftPrev, "draft_prev.pdf") : null;
+  const realLegalDossierFiles = filesLegalDossier.filter((f) => f.size > 0);
+  const fileLegalDossierPaths = await Promise.all(
+    realLegalDossierFiles.map((f, i) => saveFile(checkId, f, `legal_dossier_${i + 1}.pdf`))
+  );
 
   const check = await createCheck({
     id: checkId,
@@ -129,6 +142,8 @@ export async function POST(request: Request) {
       fileErcOriginalPath,
       fileIrcLatestPath,
       fileIrcOriginalPath,
+      fileDraftPrevPath,
+      fileLegalDossierPaths,
     },
   });
 

@@ -26,6 +26,10 @@ create table if not exists checks (
   file_erc_original_path  text,
   file_irc_latest_path    text,
   file_irc_original_path  text,
+  -- v6.1: bản Draft/Issue liền kề trước đó (Mục 15) và hồ sơ pháp lý mở rộng — giấy phép
+  -- con, ưu đãi thuế, hợp đồng thuê đất... (Mục 9A). Cả hai đều tùy chọn.
+  file_draft_prev_path        text,
+  file_legal_dossier_paths    jsonb,
 
   status                   text not null default 'processing',
   error_message            text,
@@ -58,6 +62,12 @@ create table if not exists findings (
   note          text,
   display_order integer not null default 0
 );
+
+-- v6.1: adds two optional file columns to a `checks` table created by an earlier
+-- version of this schema. `create table if not exists` above is a no-op once the table
+-- already exists, so these ALTERs are what actually apply the new columns on re-run.
+alter table checks add column if not exists file_draft_prev_path text;
+alter table checks add column if not exists file_legal_dossier_paths jsonb;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);

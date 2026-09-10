@@ -2,18 +2,20 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { Finding, FindingCategory } from "@/types/finding";
-import { CATEGORY_LABELS } from "@/types/finding";
+import { CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
 
 const CATEGORY_COLORS: Record<FindingCategory, string> = {
   so_lieu: "#ef4444",
   chinh_ta: "#f97316",
   format: "#eab308",
   erc_irc: "#8b5cf6",
+  phap_ly: "#701a75",
+  doi_chieu: "#0891b2",
   khac: "#3b82f6",
 };
 
 export function ErrorDonutChart({ findings }: { findings: Finding[] }) {
-  const errors = findings.filter((f) => f.status !== "match");
+  const errors = findings.filter((f) => normalizeFindingStatus(f.status) !== "pass");
   const total = errors.length;
 
   const byCategory = (Object.keys(CATEGORY_LABELS) as FindingCategory[])

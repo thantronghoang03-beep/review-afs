@@ -22,6 +22,11 @@ interface ReviewInput {
   ircChanged: "na" | "yes" | null;
   ercHasOriginal: boolean;
   ircHasOriginal: boolean;
+  // Mục 2 / Mục 15 (v6.1) — bản Draft/Issue liền kề trước đó, tùy chọn.
+  draftDocument: string | null;
+  // Mục 2 / Mục 9A (v6.1) — hồ sơ pháp lý mở rộng (giấy phép con, ưu đãi thuế, hợp
+  // đồng thuê đất...), tùy chọn, có thể ghép nhiều file.
+  legalDossierDocument: string | null;
 }
 
 export interface ReviewResult {
@@ -55,37 +60,40 @@ function describeErcIrcStatus(
   return `TÀI LIỆU ${label}: Đã cung cấp bản mới nhất. Người dùng xác nhận KHÔNG có thay đổi so với bản gốc — ghi nhận bình thường, không cần Warning về bản gốc.`;
 }
 
+// Mục 2 (Master Prompt v6.1) quy định input trong user message phải bọc trong đúng bộ
+// thẻ này để model nhận diện đủ ngữ cảnh — giữ nguyên tên thẻ, kể cả khi giá trị là N/A.
 function buildUserMessage(input: ReviewInput): string {
-  const parts = [
+  const notesParts = [
     `THÔNG TIN KHÁCH HÀNG:`,
     `- Tên khách hàng: ${input.clientName}`,
     `- Năm tài chính: ${input.fiscalYear}`,
-    `- Kỳ kế toán năm nay: ${input.periodCurrentStart} đến ${input.periodCurrentEnd}`,
-    `- Kỳ kế toán năm trước: ${
-      input.periodPriorStart && input.periodPriorEnd
-        ? `${input.periodPriorStart} đến ${input.periodPriorEnd}`
-        : "N/A (không có kỳ trước)"
-    }`,
     `- PERIOD_TYPE (đã xác định trước, không cần suy luận lại): ${input.periodType}`,
     ``,
     describeErcIrcStatus("IRC", Boolean(input.ircDocument), input.ircChanged, input.ircHasOriginal),
     describeErcIrcStatus("ERC", Boolean(input.ercDocument), input.ercChanged, input.ercHasOriginal),
-    ``,
-    `=== BÁO CÁO TIẾNG VIỆT (VN) ===`,
-    input.vnDocument,
-    ``,
-    `=== BÁO CÁO TIẾNG ANH (EN) ===`,
-    input.enDocument,
-  ];
+  ].join("\n");
 
-  if (input.ercDocument) {
-    parts.push(``, `=== TÀI LIỆU ERC ===`, input.ercDocument);
-  }
-  if (input.ircDocument) {
-    parts.push(``, `=== TÀI LIỆU IRC ===`, input.ircDocument);
-  }
+  const tags = [
+    ["bao_cao_en", input.enDocument],
+    ["bao_cao_vn", input.vnDocument],
+    ["erc_moi_nhat", input.ercDocument ?? "N/A"],
+    ["erc_goc", input.ercHasOriginal ? "(xem trong erc_moi_nhat ở trên — bao gồm cả bản gốc)" : "N/A"],
+    ["irc_moi_nhat", input.ircDocument ?? "N/A"],
+    ["irc_goc", input.ircHasOriginal ? "(xem trong irc_moi_nhat ở trên — bao gồm cả bản gốc)" : "N/A"],
+    ["draft_truoc", input.draftDocument ?? "N/A"],
+    ["ho_so_phap_ly", input.legalDossierDocument ?? "N/A"],
+    [
+      "nien_do_nam_truoc",
+      input.periodPriorStart && input.periodPriorEnd
+        ? `${input.periodPriorStart} đến ${input.periodPriorEnd}`
+        : "N/A",
+    ],
+    ["nien_do_nam_nay", `${input.periodCurrentStart} đến ${input.periodCurrentEnd}`],
+  ] as const;
 
-  return parts.join("\n");
+  const tagBlocks = tags.map(([tag, content]) => `<${tag}>\n${content}\n</${tag}>`);
+
+  return [notesParts, ``, ...tagBlocks].join("\n");
 }
 
 export async function countReviewTokens(input: ReviewInput): Promise<number> {
@@ -106,6 +114,34 @@ export class ReviewInputTooLargeError extends Error {
   }
 }
 
+const SYSTEM_BLOCKS: Anthropic.TextBlockParam[] = [
+  {
+    type: "text",
+    text: buildSystemPrompt(),
+    cache_control: { type: "ephemeral" },
+  },
+];
+
+// Mục 0 điểm 3 / Mục 9B (v6.1): bắt buộc bật web_search để model tự tra cứu hiệu lực
+// Luật/Nghị định/Thông tư trước khi kết luận Critical. web_search là "server tool" —
+// Anthropic tự thực thi và nối kết quả vào cùng một message, không cần vòng lặp
+// client-side cho riêng bước tra cứu.
+const REVIEW_TOOLS: Anthropic.ToolUnion[] = [
+  { type: "web_search_20250305", name: "web_search" },
+  {
+    name: TOOL_NAME,
+    description: "Nộp kết quả review báo cáo kiểm toán theo đúng schema JSON đã định nghĩa.",
+    input_schema: findingsInputSchema as unknown as Anthropic.Tool.InputSchema,
+  },
+];
+
+function extractToolUse(response: Anthropic.Message): Anthropic.ToolUseBlock | null {
+  const block = response.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === TOOL_NAME
+  );
+  return block ?? null;
+}
+
 export async function runReview(input: ReviewInput): Promise<ReviewResult> {
   const tokenCount = await countReviewTokens(input);
   if (tokenCount > MAX_INPUT_TOKENS) {
@@ -113,32 +149,50 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
   }
 
   const client = getAnthropicClient();
+  const userMessage: Anthropic.MessageParam = { role: "user", content: buildUserMessage(input) };
+
   // Findings output can legitimately need tens of thousands of tokens for large audit
   // reports; max_tokens this high requires streaming per the SDK's long-request rule.
-  const stream = client.messages.stream({
+  // tool_choice is "auto" (not forced) here so the model is free to call "web_search"
+  // one or more times first, per Mục 9B — a forced single-tool choice would block that.
+  const firstStream = client.messages.stream({
     model: CLAUDE_MODEL,
     max_tokens: 32000,
-    system: [
-      {
-        type: "text",
-        text: buildSystemPrompt(),
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: [
-      {
-        name: TOOL_NAME,
-        description: "Nộp kết quả review báo cáo kiểm toán theo đúng schema JSON đã định nghĩa.",
-        input_schema: findingsInputSchema as unknown as Anthropic.Tool.InputSchema,
-      },
-    ],
-    tool_choice: { type: "tool", name: TOOL_NAME },
-    messages: [{ role: "user", content: buildUserMessage(input) }],
+    system: SYSTEM_BLOCKS,
+    tools: REVIEW_TOOLS,
+    tool_choice: { type: "auto" },
+    messages: [userMessage],
   });
-  const response = await stream.finalMessage();
+  const firstResponse = await firstStream.finalMessage();
 
-  const toolUse = response.content.find((block) => block.type === "tool_use");
-  if (!toolUse || toolUse.type !== "tool_use") {
+  let toolUse = extractToolUse(firstResponse);
+  let followUpResponse: Anthropic.Message | null = null;
+
+  if (!toolUse) {
+    // Model finished (e.g. after its own web_search round-trips) without calling
+    // submit_review_findings — continue the same conversation and force it this time,
+    // per system-prompt.ts: "LƯỢT GỌI TOOL CUỐI CÙNG bắt buộc phải là submit_review_findings".
+    const followUpStream = client.messages.stream({
+      model: CLAUDE_MODEL,
+      max_tokens: 32000,
+      system: SYSTEM_BLOCKS,
+      tools: REVIEW_TOOLS,
+      tool_choice: { type: "tool", name: TOOL_NAME },
+      messages: [
+        userMessage,
+        { role: "assistant", content: firstResponse.content },
+        {
+          role: "user",
+          content:
+            "Hãy nộp kết quả review đầy đủ ngay bây giờ bằng cách gọi tool submit_review_findings, dựa trên toàn bộ nội dung và kết quả tra cứu đã có ở trên.",
+        },
+      ],
+    });
+    followUpResponse = await followUpStream.finalMessage();
+    toolUse = extractToolUse(followUpResponse);
+  }
+
+  if (!toolUse) {
     throw new Error("Claude không trả về tool_use block như yêu cầu.");
   }
 
@@ -146,8 +200,10 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
 
   return {
     data,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
-    cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+    inputTokens: firstResponse.usage.input_tokens + (followUpResponse?.usage.input_tokens ?? 0),
+    outputTokens: firstResponse.usage.output_tokens + (followUpResponse?.usage.output_tokens ?? 0),
+    cacheReadTokens:
+      (firstResponse.usage.cache_read_input_tokens ?? 0) +
+      (followUpResponse?.usage.cache_read_input_tokens ?? 0),
   };
 }

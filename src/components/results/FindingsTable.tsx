@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import type { Finding, FindingStatus } from "@/types/finding";
-import { SEVERITY_LABELS, CATEGORY_LABELS } from "@/types/finding";
+import { SEVERITY_LABELS, CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { StatusBadge } from "@/components/ui/Badge";
 
 const FILTERS: Array<{ key: "all" | FindingStatus; label: string }> = [
   { key: "all", label: "Tất cả" },
-  { key: "match", label: "Match" },
-  { key: "difference", label: "Difference" },
+  { key: "pass", label: "Pass" },
+  { key: "error", label: "Error" },
   { key: "warning", label: "Warning" },
   { key: "missing_in_en", label: "Missing in EN" },
   { key: "needs_supplementing", label: "Cần bổ sung" },
+  { key: "critical", label: "Critical" },
 ];
 
 function pageLabel(f: Finding): string {
@@ -24,13 +25,15 @@ function pageLabel(f: Finding): string {
 export function FindingsTable({ findings }: { findings: Finding[] }) {
   const [filter, setFilter] = useState<"all" | FindingStatus>("all");
 
-  const filtered = filter === "all" ? findings : findings.filter((f) => f.status === filter);
+  const filtered =
+    filter === "all" ? findings : findings.filter((f) => normalizeFindingStatus(f.status) === filter);
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => {
-          const count = f.key === "all" ? findings.length : findings.filter((x) => x.status === f.key).length;
+          const count =
+            f.key === "all" ? findings.length : findings.filter((x) => normalizeFindingStatus(x.status) === f.key).length;
           const isActive = filter === f.key;
           return (
             <button

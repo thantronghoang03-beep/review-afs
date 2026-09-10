@@ -1,11 +1,19 @@
 export type FindingStatus =
-  | "match"
-  | "difference"
+  | "pass"
+  | "error"
   | "warning"
   | "missing_in_en"
-  | "needs_supplementing";
+  | "needs_supplementing"
+  | "critical";
 
-export type FindingCategory = "so_lieu" | "chinh_ta" | "format" | "erc_irc" | "khac";
+export type FindingCategory =
+  | "so_lieu"
+  | "chinh_ta"
+  | "format"
+  | "erc_irc"
+  | "phap_ly"
+  | "doi_chieu"
+  | "khac";
 
 export type FindingSeverity = "critical" | "medium" | "minor";
 
@@ -32,12 +40,26 @@ export interface CategoryStatus {
 
 export type CategoriesChecked = Record<FindingCategory, CategoryStatus>;
 
+// Labels và ý nghĩa lấy nguyên văn theo Master Prompt v6.1 — Mục 7.6 (Legend bắt buộc).
 export const STATUS_LABELS: Record<FindingStatus, string> = {
-  match: "Match",
-  difference: "Difference",
+  pass: "Pass",
+  error: "Error",
   warning: "Warning",
   missing_in_en: "Missing in EN",
   needs_supplementing: "Cần bổ sung",
+  critical: "Critical",
+};
+
+export const STATUS_LEGEND: Record<FindingStatus, string> = {
+  pass: "Đúng, nhất quán. Đã đối chiếu và không phát hiện sai lệch — không cần xử lý thêm.",
+  error: "Sai hoặc số liệu/nội dung không khớp. Cần sửa trước khi phát hành báo cáo.",
+  warning:
+    "Lỗi nhỏ, chưa chuẩn, hoặc thiếu tài liệu để xác minh (ngữ pháp, phong cách, wording, chưa có bản gốc đối chiếu...). Nên xử lý nhưng không bắt buộc phải sửa ngay.",
+  missing_in_en: "Thiếu bản dịch một bên. Có ở VN nhưng thiếu ở EN, hoặc ngược lại.",
+  needs_supplementing:
+    "Thiếu mã TM/Notes hoặc thiếu thuyết minh tương ứng. Riêng cho gap đối chiếu giữa mặt báo cáo và Thuyết minh.",
+  critical:
+    "Sai phạm nghiêm trọng — rủi ro pháp lý/kiểm toán cao (căn cứ pháp lý hết hiệu lực, hoạt động chưa có giấy phép con, vi phạm điều kiện ưu đãi thuế...). PHẢI xử lý trước khi phát hành.",
 };
 
 export const SEVERITY_LABELS: Record<FindingSeverity, string> = {
@@ -51,13 +73,31 @@ export const CATEGORY_LABELS: Record<FindingCategory, string> = {
   chinh_ta: "Chính tả",
   format: "Format",
   erc_irc: "ERC/IRC",
+  phap_ly: "Hồ sơ pháp lý & hiệu lực văn bản",
+  doi_chieu: "Đối chiếu phiên bản liền kề",
   khac: "Khác",
 };
 
+// Findings created before the v6.1 rollout still carry the old v5.0 status strings
+// ("match"/"difference") in the database. Every place that keys off status (badges,
+// filters, exports, stats) should normalize through this first so old check history
+// keeps rendering correctly instead of hitting an undefined lookup.
+const LEGACY_STATUS_ALIASES: Record<string, FindingStatus> = {
+  match: "pass",
+  difference: "error",
+};
+
+export function normalizeFindingStatus(status: FindingStatus | string): FindingStatus {
+  return (LEGACY_STATUS_ALIASES[status] ?? status) as FindingStatus;
+}
+
 // Fixed server-side policy — severity is derived from status, never decided by the AI.
+// "critical" (legal/compliance) and "error" (số liệu/nội dung sai) both land in the
+// "critical" severity bucket used for stats — both must be fixed before publishing.
 export const SEVERITY_BY_STATUS: Record<FindingStatus, FindingSeverity | null> = {
-  match: null,
-  difference: "critical",
+  pass: null,
+  error: "critical",
+  critical: "critical",
   needs_supplementing: "medium",
   missing_in_en: "medium",
   warning: "minor",

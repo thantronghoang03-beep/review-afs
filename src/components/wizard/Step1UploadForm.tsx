@@ -34,6 +34,11 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   const [fileErcOriginal, setFileErcOriginal] = useState<File | null>(null);
   const [fileIrcLatest, setFileIrcLatest] = useState<File | null>(null);
   const [fileIrcOriginal, setFileIrcOriginal] = useState<File | null>(null);
+  // v6.1 — Mục 15 (đối chiếu phiên bản liền kề) và Mục 9A (hồ sơ pháp lý mở rộng), cả
+  // hai tùy chọn: bỏ trống → model tự bỏ qua đúng như prompt mô tả.
+  const [fileDraftPrev, setFileDraftPrev] = useState<File | null>(null);
+  const [filesLegalDossier, setFilesLegalDossier] = useState<File[]>([]);
+  const [showExtraInputs, setShowExtraInputs] = useState(false);
   // Per master prompt §"Logic xử lý ghi chú ERC/IRC": N/A → no warning needed;
   // "changed" without an original to compare against → AI must record a Warning.
   const [ircChanged, setIrcChanged] = useState<"na" | "yes">("na");
@@ -73,6 +78,8 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     if (fileIrcOriginal) formData.set("fileIrcOriginal", fileIrcOriginal);
     formData.set("ercChanged", fileErcLatest ? ercChanged : "na");
     formData.set("ircChanged", fileIrcLatest ? ircChanged : "na");
+    if (fileDraftPrev) formData.set("fileDraftPrev", fileDraftPrev);
+    filesLegalDossier.forEach((f) => formData.append("fileLegalDossier", f));
 
     onSubmit(formData);
   }
@@ -328,6 +335,66 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           )}
         </div>
 
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowExtraInputs((v) => !v)}
+            className="text-xs font-medium text-jpa-600 hover:underline"
+          >
+            {showExtraInputs ? "Ẩn" : "+ Thêm"} Bản Draft/Issue liền kề & Hồ sơ pháp lý mở rộng (tùy chọn — Mục 9A,
+            15 master prompt v6.1)
+          </button>
+          {showExtraInputs && (
+            <div className="mt-3 space-y-4">
+              <div>
+                <FileDropSlot
+                  label="Bản Draft/Issue liền kề trước đó"
+                  sublabel="Dùng để đối chiếu phiên bản — bỏ trống nếu không có"
+                  file={fileDraftPrev}
+                  onChange={setFileDraftPrev}
+                />
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-xs text-zinc-500">
+                  Hồ sơ pháp lý mở rộng (giấy phép con, quyết định ưu đãi thuế, hợp đồng thuê đất...) — có thể
+                  chọn nhiều file, bỏ trống nếu không có
+                </div>
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-3 py-5 text-center hover:border-jpa-300 hover:bg-jpa-50/30">
+                  <span className="text-sm font-medium text-zinc-700">+ Chọn file hồ sơ pháp lý</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => setFilesLegalDossier(Array.from(e.target.files ?? []))}
+                  />
+                </label>
+                {filesLegalDossier.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {filesLegalDossier.map((f, i) => (
+                      <li
+                        key={`${f.name}-${i}`}
+                        className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-600"
+                      >
+                        <span className="truncate">{f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setFilesLegalDossier((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="ml-2 shrink-0 text-zinc-400 hover:text-red-500"
+                          aria-label={`Xóa ${f.name}`}
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <p className="mt-3 text-xs text-zinc-400">Định dạng hỗ trợ: PDF. Dung lượng tối đa: 50MB/file.</p>
 
         {submitError && (
@@ -350,12 +417,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
         <div className="rounded-2xl border border-zinc-200 bg-white p-5">
           <h3 className="mb-4 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
           <div className="space-y-3 text-sm text-zinc-600">
-            <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v5.0):</p>
+            <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v6.1):</p>
             <ul className="list-inside list-disc space-y-1.5 text-zinc-600">
               <li>Nhận diện loại kỳ kiểm toán (đầu tiên / giai đoạn / bình thường / giải thể)</li>
               <li>Kiểm tra theo 6 bước: bìa → mục lục → các mục → số trang → đối chiếu Thuyết minh hai chiều → tính toán lại</li>
-              <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format</li>
-              <li>Đối chiếu ERC/IRC (nếu có cung cấp)</li>
+              <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format, thuật ngữ chuẩn JPA</li>
+              <li>Đối chiếu ERC/IRC và hồ sơ pháp lý mở rộng (nếu có cung cấp)</li>
+              <li>Tra cứu online hiệu lực Luật/Nghị định/Thông tư được trích dẫn</li>
+              <li>Đối chiếu với bản Draft/Issue liền kề trước đó (nếu có cung cấp)</li>
             </ul>
             <p className="text-zinc-400">Thời gian xử lý tùy theo độ dài báo cáo, thường từ 1-3 phút.</p>
           </div>

@@ -66,6 +66,22 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
       ircDocument = parts.join("\n\n");
     }
 
+    // v6.1 — Mục 15: bản Draft/Issue liền kề trước đó, tùy chọn.
+    const draftDocument = check.fileDraftPrevPath
+      ? buildPageDelimitedDocument("DRAFT-PREV", await extractFromStorage(check.fileDraftPrevPath))
+      : null;
+
+    // v6.1 — Mục 9A: hồ sơ pháp lý mở rộng, có thể nhiều file — ghép lại thành một khối.
+    let legalDossierDocument: string | null = null;
+    if (check.fileLegalDossierPaths.length > 0) {
+      const parts = await Promise.all(
+        check.fileLegalDossierPaths.map(async (path, i) =>
+          buildPageDelimitedDocument(`HO-SO-PHAP-LY-${i + 1}`, await extractFromStorage(path))
+        )
+      );
+      legalDossierDocument = parts.join("\n\n");
+    }
+
     const result = await runReview({
       clientName: check.clientName,
       fiscalYear: check.fiscalYear,
@@ -82,6 +98,8 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
       ircHasOriginal: Boolean(check.fileIrcOriginalPath),
       ercChanged: check.fileErcLatestPath ? (options.ercChanged ?? "na") : null,
       ircChanged: check.fileIrcLatestPath ? (options.ircChanged ?? "na") : null,
+      draftDocument,
+      legalDossierDocument,
     });
 
     const findingsToInsert = result.data.findings.map((f, index) => ({
