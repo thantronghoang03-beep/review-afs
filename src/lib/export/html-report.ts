@@ -1,13 +1,7 @@
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding, FindingStatus } from "@/types/finding";
-import {
-  STATUS_LABELS,
-  STATUS_LEGEND,
-  SEVERITY_LABELS,
-  CATEGORY_LABELS,
-  normalizeFindingStatus,
-} from "@/types/finding";
+import { STATUS_LABELS, STATUS_LEGEND, CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { formatDateTime } from "@/lib/format/date";
 
 // Mục 7.6 / Mục 14 — Legend bắt buộc, luôn đủ 6 trạng thái, không phụ thuộc dữ liệu.
@@ -46,11 +40,6 @@ function pageLabel(f: Finding): string {
 }
 
 export function generateHtmlReport(check: Check, findings: Finding[]): string {
-  const errorFindings = findings.filter((f) => normalizeFindingStatus(f.status) !== "pass");
-  const critical = errorFindings.filter((f) => f.severity === "critical").length;
-  const medium = errorFindings.filter((f) => f.severity === "medium").length;
-  const minor = errorFindings.filter((f) => f.severity === "minor").length;
-
   const statusCounts = (Object.keys(STATUS_LABELS) as FindingStatus[]).map((status) => ({
     status,
     label: STATUS_LABELS[status],
@@ -68,7 +57,6 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
         <td>${escapeHtml(f.contentVn)}</td>
         <td>${escapeHtml(f.contentEn)}</td>
         <td><span class="badge" style="background:${STATUS_COLORS[status]}1a;color:${STATUS_COLORS[status]}">${escapeHtml(STATUS_LABELS[status])}</span></td>
-        <td>${f.severity ? escapeHtml(SEVERITY_LABELS[f.severity]) : "—"}</td>
         <td>${escapeHtml(f.note)}</td>
       </tr>`;
     })
@@ -103,15 +91,17 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   .header h1 { font-size: 18px; margin: 0 0 4px; }
   .header p { margin: 0; font-size: 13px; color: #a1a1aa; }
   .period-badge { background: #eff6ff; color: #1d4ed8; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .stat-card { border-radius: 12px; padding: 14px; }
   .stat-card .label { font-size: 12px; opacity: .8; }
   .stat-card .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
-  .stat-total { background: #fef2f2; color: #b91c1c; }
-  .stat-critical { background: #fff7ed; color: #c2410c; }
-  .stat-medium { background: #fefce8; color: #a16207; }
-  .stat-minor { background: #eff6ff; color: #1d4ed8; }
-  .stat-checked { background: #f0fdf4; color: #15803d; }
+  .stat-total { background: #f4f4f5; color: #3f3f46; }
+  .stat-pass { background: #f0fdf4; color: #15803d; }
+  .stat-error { background: #fef2f2; color: #b91c1c; }
+  .stat-warning { background: #fefce8; color: #a16207; }
+  .stat-missing_in_en { background: #eff6ff; color: #1d4ed8; }
+  .stat-needs_supplementing { background: #fff7ed; color: #c2410c; }
+  .stat-critical { background: #f3e8ff; color: #581c87; }
   .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 20px; }
   .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .filter-btn { border: none; background: #f4f4f5; color: #52525b; font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
@@ -148,11 +138,13 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   </div>
 
   <div class="stats">
-    <div class="stat-card stat-total"><div class="label">Tổng số lỗi</div><div class="value">${errorFindings.length}</div></div>
-    <div class="stat-card stat-critical"><div class="label">Nghiêm trọng</div><div class="value">${critical}</div></div>
-    <div class="stat-card stat-medium"><div class="label">Trung bình</div><div class="value">${medium}</div></div>
-    <div class="stat-card stat-minor"><div class="label">Nhẹ</div><div class="value">${minor}</div></div>
-    <div class="stat-card stat-checked"><div class="label">Đã kiểm tra</div><div class="value">${findings.length}</div></div>
+    <div class="stat-card stat-total"><div class="label">Tổng</div><div class="value">${findings.length}</div></div>
+    ${statusCounts
+      .map(
+        (s) =>
+          `<div class="stat-card stat-${s.status}"><div class="label">${escapeHtml(s.label)}</div><div class="value">${s.count}</div></div>`
+      )
+      .join("")}
   </div>
 
   <div class="card">
@@ -160,7 +152,7 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
     <table>
       <thead>
         <tr>
-          <th>#</th><th>Mục kiểm tra</th><th>Trang</th><th>Nội dung VN</th><th>Nội dung EN</th><th>Trạng thái</th><th>Mức độ</th><th>Ghi chú</th>
+          <th>#</th><th>Mục kiểm tra</th><th>Trang</th><th>Nội dung VN</th><th>Nội dung EN</th><th>Trạng thái</th><th>Ghi chú</th>
         </tr>
       </thead>
       <tbody id="findings-body">${rows}</tbody>

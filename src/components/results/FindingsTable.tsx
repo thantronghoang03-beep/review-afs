@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Finding, FindingStatus } from "@/types/finding";
-import { SEVERITY_LABELS, CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
+import { CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { StatusBadge } from "@/components/ui/Badge";
 
 const FILTERS: Array<{ key: "all" | FindingStatus; label: string }> = [
@@ -59,14 +59,13 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
               <th className="px-3 py-2.5">Nội dung VN</th>
               <th className="px-3 py-2.5">Nội dung EN</th>
               <th className="px-3 py-2.5">Trạng thái</th>
-              <th className="px-3 py-2.5">Mức độ</th>
               <th className="px-3 py-2.5">Ghi chú</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-zinc-400">
+                <td colSpan={7} className="px-3 py-8 text-center text-zinc-400">
                   Không có mục nào.
                 </td>
               </tr>
@@ -86,7 +85,6 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
                 <td className="px-3 py-2.5">
                   <StatusBadge status={f.status} />
                 </td>
-                <td className="px-3 py-2.5 text-zinc-500">{f.severity ? SEVERITY_LABELS[f.severity] : "—"}</td>
                 <td className="max-w-[260px] px-3 py-2.5 text-zinc-600">{f.note ?? "—"}</td>
               </tr>
             ))}

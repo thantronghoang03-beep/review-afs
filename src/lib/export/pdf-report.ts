@@ -1,9 +1,21 @@
 import PDFDocument from "pdfkit";
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
-import type { Finding } from "@/types/finding";
+import type { Finding, FindingStatus } from "@/types/finding";
 import { STATUS_LABELS, normalizeFindingStatus } from "@/types/finding";
 import { formatDateTime } from "@/lib/format/date";
+
+// Mục 14 (Master Prompt v6.1) — stats theo đúng 6 trạng thái, không quy đổi ra mức độ
+// nghiêm trọng (severity là dữ liệu nội bộ dùng để tô màu, không phải một lớp phân
+// loại riêng trong output).
+const STATUS_ORDER: FindingStatus[] = [
+  "pass",
+  "error",
+  "warning",
+  "missing_in_en",
+  "needs_supplementing",
+  "critical",
+];
 
 function pageLabel(f: Finding): string {
   if (f.pageVn && f.pageEn) return f.pageVn === f.pageEn ? `tr.${f.pageVn}` : `VN tr.${f.pageVn} / EN tr.${f.pageEn}`;
@@ -14,6 +26,11 @@ function pageLabel(f: Finding): string {
 
 export async function generatePdfReport(check: Check, findings: Finding[]): Promise<Buffer> {
   const errorFindings = findings.filter((f) => normalizeFindingStatus(f.status) !== "pass");
+  const statusCounts = STATUS_ORDER.map((status) => ({
+    status,
+    label: STATUS_LABELS[status],
+    count: findings.filter((f) => normalizeFindingStatus(f.status) === status).length,
+  }));
 
   const doc = new PDFDocument({ size: "A4", margin: 40 });
   const chunks: Buffer[] = [];
@@ -33,11 +50,8 @@ export async function generatePdfReport(check: Check, findings: Finding[]): Prom
   doc.fillColor("#000");
   doc.moveDown(1);
 
-  doc.fontSize(13).text(`Tổng số lỗi: ${errorFindings.length}`);
-  const critical = errorFindings.filter((f) => f.severity === "critical").length;
-  const medium = errorFindings.filter((f) => f.severity === "medium").length;
-  const minor = errorFindings.filter((f) => f.severity === "minor").length;
-  doc.fontSize(10).text(`Nghiêm trọng: ${critical}   Trung bình: ${medium}   Nhẹ: ${minor}`);
+  doc.fontSize(13).text(`Tổng: ${findings.length}   (${errorFindings.length} cần chú ý)`);
+  doc.fontSize(10).text(statusCounts.map((s) => `${s.label}: ${s.count}`).join("   "));
   doc.moveDown(1);
 
   doc.fontSize(13).text("Chi tiết lỗi", { underline: true });
