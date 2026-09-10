@@ -11,7 +11,6 @@ import {
   SettingsIcon,
   ShieldCheckIcon,
 } from "@/components/ui/icons";
-import { UsageWidget } from "./UsageWidget";
 
 const NAV_ITEMS = [
   { href: "/", label: "Trang chủ", icon: HomeIcon },
@@ -57,8 +56,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <UsageWidget />
     </aside>
   );
 }
