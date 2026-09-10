@@ -38,23 +38,23 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-jpa-900 via-jpa-600 to-jpa-900 p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl"
+        className="w-full max-w-lg rounded-3xl bg-white p-12 shadow-2xl"
       >
         <div className="flex flex-col items-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-jpa-600 text-white">
-            <ShieldCheckIcon size={32} />
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-jpa-600 text-white">
+            <ShieldCheckIcon size={40} />
           </div>
-          <h1 className="text-center text-xl font-bold text-zinc-900">JPA Vietvalues – Review AFS</h1>
-          <p className="mt-1 text-sm tracking-wide text-zinc-400">VIETVALUES · HCMB</p>
+          <h1 className="text-center text-2xl font-bold text-zinc-900">JPA Vietvalues – Review AFS</h1>
+          <p className="mt-2 text-base tracking-wide text-zinc-400">VIETVALUES · HCMB</p>
         </div>
 
-        <div className="mt-7">
-          <label className="mb-1.5 block text-xs font-semibold tracking-wide text-zinc-500">
+        <div className="mt-9">
+          <label className="mb-2 block text-sm font-semibold tracking-wide text-zinc-500">
             TÊN ĐĂNG NHẬP
           </label>
           <input
             autoFocus
-            className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm focus:border-jpa-400 focus:outline-none focus:ring-2 focus:ring-jpa-100"
+            className="w-full rounded-xl border border-zinc-200 px-5 py-3.5 text-base focus:border-jpa-400 focus:outline-none focus:ring-2 focus:ring-jpa-100"
             placeholder="Nhập tên của bạn..."
             value={name}
             onChange={(e) => {
@@ -64,11 +64,11 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="mt-4">
-          <label className="mb-1.5 block text-xs font-semibold tracking-wide text-zinc-500">MẬT KHẨU</label>
+        <div className="mt-5">
+          <label className="mb-2 block text-sm font-semibold tracking-wide text-zinc-500">MẬT KHẨU</label>
           <input
             type="password"
-            className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 text-sm focus:border-jpa-400 focus:outline-none focus:ring-2 focus:ring-jpa-100"
+            className="w-full rounded-xl border border-zinc-200 px-5 py-3.5 text-base focus:border-jpa-400 focus:outline-none focus:ring-2 focus:ring-jpa-100"
             placeholder="Nhập mật khẩu..."
             value={password}
             onChange={(e) => {
@@ -79,8 +79,8 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">
-            <AlertTriangleIcon size={16} className="shrink-0" />
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3.5 text-base text-red-700">
+            <AlertTriangleIcon size={18} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -88,7 +88,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={!name.trim() || !password}
-          className="mt-6 w-full rounded-xl bg-jpa-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-jpa-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          className="mt-8 w-full rounded-xl bg-jpa-600 py-4 text-base font-semibold text-white transition-colors hover:bg-jpa-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           Đăng nhập →
         </button>
