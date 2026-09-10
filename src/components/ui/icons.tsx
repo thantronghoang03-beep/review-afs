@@ -87,6 +87,8 @@ export const BellIcon = (p: IconProps) =>
 
 export const ChevronDownIcon = (p: IconProps) => base(<path d="m6 9 6 6 6-6" />, p);
 
+export const ChevronRightIcon = (p: IconProps) => base(<path d="m9 6 6 6-6 6" />, p);
+
 export const ShieldCheckIcon = (p: IconProps) =>
   base(
     <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileDropSlot } from "./FileDropSlot";
+import { PreviousChecksPanel } from "./PreviousChecksPanel";
 import { AlertTriangleIcon, BuildingPlusIcon } from "@/components/ui/icons";
 import { useCompany } from "@/lib/context/CompanyContext";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -214,7 +215,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-zinc-700">
             Tải lên báo cáo tài chính
           </div>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <FileDropSlot
               label="BCTC - Tiếng Anh (EN)"
               sublabel="Financial Statements (EN)"
@@ -345,18 +346,24 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
         </button>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h3 className="mb-4 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
-        <div className="space-y-3 text-sm text-zinc-600">
-          <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v5.0):</p>
-          <ul className="list-inside list-disc space-y-1.5 text-zinc-600">
-            <li>Nhận diện loại kỳ kiểm toán (đầu tiên / giai đoạn / bình thường / giải thể)</li>
-            <li>Kiểm tra theo 6 bước: bìa → mục lục → các mục → số trang → đối chiếu Thuyết minh hai chiều → tính toán lại</li>
-            <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format</li>
-            <li>Đối chiếu ERC/IRC (nếu có cung cấp)</li>
-          </ul>
-          <p className="text-zinc-400">Thời gian xử lý tùy theo độ dài báo cáo, thường từ 1-3 phút.</p>
+      <div className="flex flex-col gap-6">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+          <h3 className="mb-4 text-sm font-bold text-jpa-700">2. QUY TRÌNH KIỂM TRA</h3>
+          <div className="space-y-3 text-sm text-zinc-600">
+            <p>Sau khi bấm &quot;Bắt đầu kiểm tra&quot;, AI sẽ tự động thực hiện review theo quy trình chuẩn JPA Vietvalues (Master Prompt v5.0):</p>
+            <ul className="list-inside list-disc space-y-1.5 text-zinc-600">
+              <li>Nhận diện loại kỳ kiểm toán (đầu tiên / giai đoạn / bình thường / giải thể)</li>
+              <li>Kiểm tra theo 6 bước: bìa → mục lục → các mục → số trang → đối chiếu Thuyết minh hai chiều → tính toán lại</li>
+              <li>Đối chiếu VN ↔ EN: chính tả, ngữ pháp, số liệu, format</li>
+              <li>Đối chiếu ERC/IRC (nếu có cung cấp)</li>
+            </ul>
+            <p className="text-zinc-400">Thời gian xử lý tùy theo độ dài báo cáo, thường từ 1-3 phút.</p>
+          </div>
         </div>
+
+        {selectedCompany && (
+          <PreviousChecksPanel companyId={selectedCompany.id} companyName={selectedCompany.name} />
+        )}
       </div>
     </form>
   );
