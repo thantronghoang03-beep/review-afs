@@ -36,11 +36,11 @@ export function CompanySelector() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+        className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white hover:bg-white/10"
       >
-        <Building2Icon size={16} className="text-zinc-400" />
+        <Building2Icon size={16} className="text-white/50" />
         <span className="max-w-[180px] truncate">{selectedCompany?.name ?? "Chọn công ty"}</span>
-        <ChevronDownIcon size={16} className="text-zinc-400" />
+        <ChevronDownIcon size={16} className="text-white/50" />
       </button>
 
       {open && (

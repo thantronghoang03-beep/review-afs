@@ -381,7 +381,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
         <button
           type="submit"
           disabled={!canSubmit}
-          className="mt-5 w-full rounded-lg bg-jpa-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-jpa-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          className="mt-5 w-full rounded-lg bg-jpa-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-jpa-teal/90 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           {submitting ? "Đang gửi..." : "▶ Bắt đầu kiểm tra"}
         </button>

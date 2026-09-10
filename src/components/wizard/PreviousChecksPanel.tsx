@@ -69,12 +69,12 @@ export function PreviousChecksPanel({ companyId, companyName }: PreviousChecksPa
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-xs text-zinc-500">
-                <th className="py-2 pr-2">Thời gian kiểm tra</th>
-                <th className="py-2 pr-2">Người kiểm tra</th>
-                <th className="py-2 pr-2">Kết quả</th>
-                <th className="py-2 pr-2">Ghi chú</th>
-                <th className="py-2"></th>
+              <tr className="bg-jpa-700 text-xs font-medium uppercase tracking-wide text-white">
+                <th className="px-2 py-2">Thời gian kiểm tra</th>
+                <th className="px-2 py-2">Người kiểm tra</th>
+                <th className="px-2 py-2">Kết quả</th>
+                <th className="px-2 py-2">Ghi chú</th>
+                <th className="px-2 py-2"></th>
               </tr>
             </thead>
             <tbody>

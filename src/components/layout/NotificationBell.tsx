@@ -21,7 +21,7 @@ export function NotificationBell() {
           setOpen((v) => !v);
           if (!open) markAllRead();
         }}
-        className="relative rounded-full p-2 text-zinc-500 hover:bg-zinc-100"
+        className="relative rounded-full p-2 text-white/60 hover:bg-white/10 hover:text-white"
         aria-label="Thông báo"
       >
         <BellIcon size={20} />

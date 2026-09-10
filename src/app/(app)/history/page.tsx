@@ -181,7 +181,7 @@ export default function HistoryPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500">
+                <tr className="bg-jpa-700 text-xs font-medium uppercase tracking-wide text-white">
                   <th className="px-4 py-3">Khách hàng</th>
                   <th className="px-4 py-3">Người kiểm tra</th>
                   <th className="px-4 py-3">Năm tài chính</th>

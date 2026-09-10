@@ -25,14 +25,14 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-jpa-600 text-white">
+    <aside className="flex h-full w-64 flex-col bg-jpa-700">
+      <div className="flex items-center gap-2 border-b border-white/10 px-5 py-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-jpa-teal text-white">
           <ShieldCheckIcon size={20} />
         </div>
         <div>
-          <div className="text-base font-bold leading-tight text-zinc-900">Review AFS</div>
-          <div className="text-[11px] leading-tight text-zinc-400">Audit Report Checker</div>
+          <div className="text-base font-bold leading-tight text-white">Review AFS</div>
+          <div className="text-[11px] leading-tight text-white/50">Audit Report Checker</div>
         </div>
       </div>
 
@@ -46,8 +46,8 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-jpa-50 text-jpa-700"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  ? "bg-jpa-teal/20 text-white"
+                  : "text-white/60 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Icon size={18} />

@@ -81,7 +81,7 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
       <div className="overflow-x-auto rounded-xl border border-zinc-200">
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50 text-xs text-zinc-500">
+            <tr className="bg-jpa-700 text-xs font-medium uppercase tracking-wide text-white">
               <th className="px-3 py-2.5">Mục kiểm tra</th>
               <th className="px-3 py-2.5">Trang</th>
               <th className="px-3 py-2.5">Nội dung VN</th>
