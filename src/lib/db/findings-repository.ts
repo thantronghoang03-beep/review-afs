@@ -1,10 +1,12 @@
 import { nanoid } from "nanoid";
 import { getSupabase } from "@/lib/supabase/client";
-import type { Finding, FindingCategory, FindingSeverity, FindingStatus } from "@/types/finding";
+import type { Finding, FindingCategory, FindingGroup, FindingSeverity, FindingStatus } from "@/types/finding";
+import { normalizeFindingGroup } from "@/types/finding";
 
 interface InsertFindingInput {
   checkId: string;
   section: string;
+  group: FindingGroup;
   fieldLabel: string;
   pageVn: number | null;
   pageEn: number | null;
@@ -22,6 +24,7 @@ function rowToFinding(row: Record<string, unknown>): Finding {
     id: row.id as string,
     checkId: row.check_id as string,
     section: row.section as string,
+    group: normalizeFindingGroup(row.group_name as string | null),
     fieldLabel: row.field_label as string,
     pageVn: (row.page_vn as number) ?? null,
     pageEn: (row.page_en as number) ?? null,
@@ -42,6 +45,7 @@ export async function insertFindings(inputs: InsertFindingInput[]): Promise<void
     id: `fnd_${nanoid(12)}`,
     check_id: input.checkId,
     section: input.section,
+    group_name: input.group,
     field_label: input.fieldLabel,
     page_vn: input.pageVn,
     page_en: input.pageEn,

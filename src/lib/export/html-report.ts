@@ -1,7 +1,15 @@
 import type { Check } from "@/types/check";
 import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { Finding, FindingStatus } from "@/types/finding";
-import { STATUS_LABELS, STATUS_LEGEND, CATEGORY_LABELS, normalizeFindingStatus } from "@/types/finding";
+import {
+  STATUS_LABELS,
+  STATUS_LEGEND,
+  CATEGORY_LABELS,
+  GROUP_LABELS,
+  GROUP_ORDER,
+  normalizeFindingGroup,
+  normalizeFindingStatus,
+} from "@/types/finding";
 import { formatDateTime } from "@/lib/format/date";
 
 // Mục 7.6 / Mục 14 — Legend bắt buộc, luôn đủ 6 trạng thái, không phụ thuộc dữ liệu.
@@ -46,12 +54,18 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
     count: findings.filter((f) => normalizeFindingStatus(f.status) === status).length,
   }));
 
-  const rows = findings
-    .map((f, i) => {
-      const status = normalizeFindingStatus(f.status);
-      return `
-      <tr data-status="${status}">
-        <td>${i + 1}</td>
+  // Mục 14 điểm 6 — bảng chi tiết nhóm theo đúng 17 mục, theo đúng thứ tự đó; chỉ hiện
+  // các nhóm thực sự có dữ liệu.
+  const rows = GROUP_ORDER.map((group) => {
+    const items = findings.filter((f) => normalizeFindingGroup(f.group) === group);
+    if (items.length === 0) return "";
+    const itemRows = items
+      .map((f) => {
+        const status = normalizeFindingStatus(f.status);
+        return `
+      <tr data-status="${status}" data-search="${escapeHtml(
+          `${f.fieldLabel} ${pageLabel(f)} ${f.contentVn ?? ""} ${f.contentEn ?? ""} ${f.note ?? ""}`.toLowerCase()
+        )}">
         <td><div class="field">${escapeHtml(f.fieldLabel)}</div><div class="muted">${escapeHtml(f.section)} · ${escapeHtml(CATEGORY_LABELS[f.category])}</div></td>
         <td class="nowrap">${escapeHtml(pageLabel(f))}</td>
         <td>${escapeHtml(f.contentVn)}</td>
@@ -59,8 +73,10 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
         <td><span class="badge" style="background:${STATUS_COLORS[status]}1a;color:${STATUS_COLORS[status]}">${escapeHtml(STATUS_LABELS[status])}</span></td>
         <td>${escapeHtml(f.note)}</td>
       </tr>`;
-    })
-    .join("");
+      })
+      .join("");
+    return `<tr class="group-row"><td colspan="6">${escapeHtml(GROUP_LABELS[group])}</td></tr>${itemRows}`;
+  }).join("");
 
   const legendItems = LEGEND_STATUS_ORDER.map(
     (status) => `
@@ -103,9 +119,10 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   .stat-needs_supplementing { background: #fff7ed; color: #c2410c; }
   .stat-critical { background: #f3e8ff; color: #581c87; }
   .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 16px; padding: 20px; }
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
   .filter-btn { border: none; background: #f4f4f5; color: #52525b; font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
   .filter-btn.active { background: #2563eb; color: #fff; }
+  .search-input { margin-left: auto; width: 100%; max-width: 260px; border: 1px solid #e4e4e7; border-radius: 999px; padding: 6px 14px; font-size: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { text-align: left; background: #fafafa; color: #71717a; font-size: 11px; padding: 10px 12px; border-bottom: 1px solid #e4e4e7; }
   td { padding: 10px 12px; border-bottom: 1px solid #f4f4f5; vertical-align: top; }
@@ -114,6 +131,10 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; display: inline-block; }
   .nowrap { white-space: nowrap; }
   .footer { text-align: center; font-size: 11px; color: #a1a1aa; margin-top: 16px; }
+  .group-row td { background: #edf1f8; color: #002d59; font-weight: 700; font-size: 12px; }
+  .note-box { margin-bottom: 16px; background: #e6f6f7; border: 1px solid #99dde1; color: #002d59; }
+  .note-box h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; margin: 0 0 6px; color: #0093a8; }
+  .note-box p { margin: 0; font-size: 13px; }
   .legend { margin-bottom: 16px; }
   .legend h2 { font-size: 13px; margin: 0 0 10px; color: #27272a; }
   .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
@@ -147,12 +168,21 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
       .join("")}
   </div>
 
+  ${
+    check.overallNotes
+      ? `<div class="card note-box"><h2>Tóm tắt kết quả review</h2><p>${escapeHtml(check.overallNotes)}</p></div>`
+      : ""
+  }
+
   <div class="card">
-    <div class="filters">${filterButtons}</div>
+    <div class="filters">
+      ${filterButtons}
+      <input class="search-input" id="search-input" placeholder="Tìm theo mục / trang / ghi chú..." oninput="applySearch(this.value)" />
+    </div>
     <table>
       <thead>
         <tr>
-          <th>#</th><th>Mục kiểm tra</th><th>Trang</th><th>Nội dung VN</th><th>Nội dung EN</th><th>Trạng thái</th><th>Ghi chú</th>
+          <th>Mục kiểm tra</th><th>Trang</th><th>Nội dung VN</th><th>Nội dung EN</th><th>Trạng thái</th><th>Nguyên nhân &amp; đề xuất xử lý</th>
         </tr>
       </thead>
       <tbody id="findings-body">${rows}</tbody>
@@ -162,13 +192,34 @@ export function generateHtmlReport(check: Check, findings: Finding[]): string {
   <p class="footer">Tạo bởi Review AFS — JPA Vietvalues, theo Master Prompt v6.1</p>
 
   <script>
+    var currentStatus = 'all';
+    var currentSearch = '';
+    function applyRowVisibility() {
+      document.querySelectorAll('#findings-body tr:not(.group-row)').forEach(function(row) {
+        var matchesStatus = currentStatus === 'all' || row.getAttribute('data-status') === currentStatus;
+        var matchesSearch = !currentSearch || (row.getAttribute('data-search') || '').indexOf(currentSearch) !== -1;
+        row.style.display = matchesStatus && matchesSearch ? '' : 'none';
+      });
+      document.querySelectorAll('#findings-body tr.group-row').forEach(function(groupRow) {
+        var next = groupRow.nextElementSibling;
+        var hasVisible = false;
+        while (next && !next.classList.contains('group-row')) {
+          if (next.style.display !== 'none') hasVisible = true;
+          next = next.nextElementSibling;
+        }
+        groupRow.style.display = hasVisible ? '' : 'none';
+      });
+    }
     function applyFilter(status) {
+      currentStatus = status;
       document.querySelectorAll('.filter-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.getAttribute('data-filter') === status);
       });
-      document.querySelectorAll('#findings-body tr').forEach(function(row) {
-        row.style.display = status === 'all' || row.getAttribute('data-status') === status ? '' : 'none';
-      });
+      applyRowVisibility();
+    }
+    function applySearch(value) {
+      currentSearch = value.trim().toLowerCase();
+      applyRowVisibility();
     }
     applyFilter('all');
   </script>

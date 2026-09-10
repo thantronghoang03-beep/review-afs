@@ -47,15 +47,21 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
 
       <StatsCards findings={findings} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:col-span-1">
-          <h4 className="mb-4 text-sm font-bold text-zinc-800">Phân loại lỗi</h4>
-          <ErrorDonutChart findings={findings} />
+      {check.overallNotes && (
+        <div className="rounded-2xl border border-jpa-teal/30 bg-jpa-teal/10 p-4 text-sm text-jpa-700">
+          <div className="mb-1 text-xs font-bold uppercase tracking-wide text-jpa-teal">Tóm tắt kết quả review</div>
+          {check.overallNotes}
         </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 lg:col-span-2">
-          <h4 className="mb-4 text-sm font-bold text-zinc-800">Chi tiết lỗi</h4>
-          <FindingsTable findings={findings} />
-        </div>
+      )}
+
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+        <h4 className="mb-4 text-sm font-bold text-zinc-800">Phân loại lỗi</h4>
+        <ErrorDonutChart findings={findings} />
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+        <h4 className="mb-4 text-sm font-bold text-zinc-800">Chi tiết lỗi</h4>
+        <FindingsTable findings={findings} />
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-zinc-200 bg-white p-4">

@@ -124,6 +124,7 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
     const findingsToInsert = result.data.findings.map((f, index) => ({
       checkId,
       section: f.section,
+      group: f.group,
       fieldLabel: f.field_label,
       pageVn: f.page_vn,
       pageEn: f.page_en,
@@ -144,6 +145,7 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
       claudeOutputTokens: result.outputTokens,
       claudeCacheReadTokens: result.cacheReadTokens,
       rawAiResponseJson: JSON.stringify(result.data),
+      overallNotes: result.data.summary.overall_notes,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi không xác định khi xử lý kiểm tra.";

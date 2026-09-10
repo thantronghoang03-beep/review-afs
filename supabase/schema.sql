@@ -42,6 +42,8 @@ create table if not exists checks (
   claude_output_tokens     integer,
   claude_cache_read_tokens integer,
   raw_ai_response_json     jsonb,
+  -- v6.1 Mục 14 điểm 5: tóm tắt cuối lượt review, hiển thị trong note-box.
+  overall_notes            text,
 
   created_at               timestamptz not null default now(),
   started_at               timestamptz,
@@ -52,6 +54,10 @@ create table if not exists findings (
   id            text primary key,
   check_id      text not null references checks(id) on delete cascade,
   section       text not null,
+  -- v6.1: which of the 17 Mục 14-điểm-6 display groups this finding belongs to (e.g.
+  -- 'bcdkt', 'hieu_luc_phap_ly') — used to render the detail table grouped/ordered per
+  -- spec. Named group_name, not "group" (a reserved SQL keyword).
+  group_name    text,
   field_label   text not null,
   page_vn       integer,
   page_en       integer,
@@ -71,6 +77,8 @@ create table if not exists findings (
 -- from the app; if you already ran that version the column is simply unused now, safe
 -- to leave or `alter table checks drop column if exists file_draft_prev_path;`.)
 alter table checks add column if not exists file_legal_dossier_paths jsonb;
+alter table findings add column if not exists group_name text;
+alter table checks add column if not exists overall_notes text;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);

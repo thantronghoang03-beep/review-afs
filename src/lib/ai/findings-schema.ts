@@ -1,5 +1,28 @@
 import { z } from "zod";
 
+// Master Prompt v6.1 — Mục 14 điểm 6: bảng chi tiết PHẢI nhóm theo đúng 17 mục này,
+// theo đúng thứ tự này. Giữ enum này khớp với FindingGroup / GROUP_ORDER trong
+// src/types/finding.ts.
+const GROUP_ENUM = [
+  "trang_bia_muc_luc",
+  "bao_cao_bgd",
+  "bao_cao_kiem_toan",
+  "bcdkt",
+  "bckqkd",
+  "bclctt",
+  "thuyet_minh",
+  "tinh_toan_lai_bcdkt",
+  "tinh_toan_lai_bckqkd",
+  "tinh_toan_lai_bclctt",
+  "cross_check_ngang",
+  "erc_irc",
+  "ho_so_phap_ly",
+  "hieu_luc_phap_ly",
+  "thuat_ngu",
+  "doi_chieu_phien_ban",
+  "khac",
+] as const;
+
 const categoryStatusSchema = {
   type: "object",
   additionalProperties: false,
@@ -45,6 +68,7 @@ export const findingsInputSchema = {
         additionalProperties: false,
         required: [
           "section",
+          "group",
           "field_label",
           "page_vn",
           "page_en",
@@ -58,6 +82,12 @@ export const findingsInputSchema = {
           section: {
             type: "string",
             description: "Master-prompt section reference, e.g. '11.2', '8.7', '9B', '15'.",
+          },
+          group: {
+            type: "string",
+            enum: GROUP_ENUM,
+            description:
+              "Which of the 17 Mục 14-điểm-6 display groups this finding belongs to (exactly one) — used to render the detail table grouped and ordered per spec, e.g. a Mục 9B legal-validity finding is 'hieu_luc_phap_ly', a BCĐKT recomputation is 'tinh_toan_lai_bcdkt'.",
           },
           field_label: { type: "string", description: "Mục kiểm tra — short label for this checked item." },
           page_vn: { type: ["integer", "null"] },
@@ -140,6 +170,7 @@ export const findingsResponseZod = z.object({
   findings: z.array(
     z.object({
       section: lenientString,
+      group: lenientEnum(GROUP_ENUM),
       field_label: lenientString,
       page_vn: lenientNullableInt,
       page_en: lenientNullableInt,

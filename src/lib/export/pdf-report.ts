@@ -76,7 +76,7 @@ export async function generatePdfReport(check: Check, findings: Finding[]): Prom
     x += colWidths.page;
     doc.text("Trạng thái", x, y + 4, { width: colWidths.status });
     x += colWidths.status;
-    doc.text("Ghi chú", x, y + 4, { width: colWidths.note });
+    doc.text("Nguyên nhân & đề xuất xử lý", x, y + 4, { width: colWidths.note });
     doc.fillColor("#000");
     doc.y = y + 18;
   }

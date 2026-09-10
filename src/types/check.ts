@@ -47,6 +47,10 @@ export interface Check extends CheckFilePaths {
   claudeOutputTokens: number | null;
   claudeCacheReadTokens: number | null;
 
+  // Mục 14 điểm 5 (v6.1) — tóm tắt ngắn gọn cuối cùng của AI về lượt review, hiển thị
+  // trong note-box trên trang kết quả. Null khi check chưa done.
+  overallNotes: string | null;
+
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;

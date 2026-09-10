@@ -49,7 +49,7 @@ export async function generateXlsxReport(check: Check, findings: Finding[]): Pro
     { header: "Nội dung (EN)", key: "contentEn", width: 40 },
     { header: "Trang", key: "page", width: 16 },
     { header: "Trạng thái", key: "status", width: 16 },
-    { header: "Ghi chú", key: "note", width: 50 },
+    { header: "Nguyên nhân & đề xuất xử lý", key: "note", width: 50 },
   ];
 
   const headerRow = sheet.getRow(1);

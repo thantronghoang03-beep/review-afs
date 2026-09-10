@@ -54,6 +54,7 @@ function rowToCheck(row: Record<string, unknown>): Check {
     claudeInputTokens: (row.claude_input_tokens as number) ?? null,
     claudeOutputTokens: (row.claude_output_tokens as number) ?? null,
     claudeCacheReadTokens: (row.claude_cache_read_tokens as number) ?? null,
+    overallNotes: (row.overall_notes as string) ?? null,
     createdAt: row.created_at as string,
     startedAt: (row.started_at as string) ?? null,
     completedAt: (row.completed_at as string) ?? null,
@@ -108,6 +109,7 @@ export async function markCheckDone(
     claudeOutputTokens: number;
     claudeCacheReadTokens: number;
     rawAiResponseJson: string;
+    overallNotes: string;
   }
 ): Promise<void> {
   const supabase = getSupabase();
@@ -121,6 +123,7 @@ export async function markCheckDone(
       claude_output_tokens: data.claudeOutputTokens,
       claude_cache_read_tokens: data.claudeCacheReadTokens,
       raw_ai_response_json: JSON.parse(data.rawAiResponseJson),
+      overall_notes: data.overallNotes,
       completed_at: new Date().toISOString(),
     })
     .eq("id", id);

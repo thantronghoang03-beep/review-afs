@@ -17,10 +17,32 @@ export type FindingCategory =
 
 export type FindingSeverity = "critical" | "medium" | "minor";
 
+// Master Prompt v6.1 — Mục 14, thành phần #6: bảng chi tiết PHẢI nhóm theo đúng 17 mục
+// này, theo đúng thứ tự này. Mỗi finding thuộc đúng 1 group.
+export type FindingGroup =
+  | "trang_bia_muc_luc"
+  | "bao_cao_bgd"
+  | "bao_cao_kiem_toan"
+  | "bcdkt"
+  | "bckqkd"
+  | "bclctt"
+  | "thuyet_minh"
+  | "tinh_toan_lai_bcdkt"
+  | "tinh_toan_lai_bckqkd"
+  | "tinh_toan_lai_bclctt"
+  | "cross_check_ngang"
+  | "erc_irc"
+  | "ho_so_phap_ly"
+  | "hieu_luc_phap_ly"
+  | "thuat_ngu"
+  | "doi_chieu_phien_ban"
+  | "khac";
+
 export interface Finding {
   id: string;
   checkId: string;
   section: string;
+  group: FindingGroup;
   fieldLabel: string;
   pageVn: number | null;
   pageEn: number | null;
@@ -67,6 +89,54 @@ export const SEVERITY_LABELS: Record<FindingSeverity, string> = {
   medium: "Trung bình",
   minor: "Nhẹ",
 };
+
+// Thứ tự nhóm hiển thị bảng chi tiết, đúng nguyên văn thứ tự Mục 14 điểm 6.
+export const GROUP_ORDER: FindingGroup[] = [
+  "trang_bia_muc_luc",
+  "bao_cao_bgd",
+  "bao_cao_kiem_toan",
+  "bcdkt",
+  "bckqkd",
+  "bclctt",
+  "thuyet_minh",
+  "tinh_toan_lai_bcdkt",
+  "tinh_toan_lai_bckqkd",
+  "tinh_toan_lai_bclctt",
+  "cross_check_ngang",
+  "erc_irc",
+  "ho_so_phap_ly",
+  "hieu_luc_phap_ly",
+  "thuat_ngu",
+  "doi_chieu_phien_ban",
+  "khac",
+];
+
+export const GROUP_LABELS: Record<FindingGroup, string> = {
+  trang_bia_muc_luc: "1. Trang bìa & Mục lục",
+  bao_cao_bgd: "2. Báo cáo BGĐ / HĐTV / TGĐ",
+  bao_cao_kiem_toan: "3. Báo cáo kiểm toán độc lập",
+  bcdkt: "4. Bảng cân đối kế toán (BCĐKT)",
+  bckqkd: "5. Báo cáo kết quả hoạt động kinh doanh (BCKQKD)",
+  bclctt: "6. Báo cáo lưu chuyển tiền tệ (BCLCTT)",
+  thuyet_minh: "7. Thuyết minh báo cáo tài chính",
+  tinh_toan_lai_bcdkt: "8. Tính toán lại — BCĐKT",
+  tinh_toan_lai_bckqkd: "9. Tính toán lại — BCKQKD",
+  tinh_toan_lai_bclctt: "10. Tính toán lại — BCLCTT",
+  cross_check_ngang: "11. Cross-check ngang (3 mặt báo cáo)",
+  erc_irc: "12. ERC / IRC đối chiếu",
+  ho_so_phap_ly: "13. Hồ sơ pháp lý mở rộng",
+  hieu_luc_phap_ly: "14. Hiệu lực căn cứ pháp lý",
+  thuat_ngu: "15. Thuật ngữ & wording",
+  doi_chieu_phien_ban: "16. Đối chiếu với phiên bản liền kề",
+  khac: "17. Khác",
+};
+
+// Findings created before this grouping existed (v6.1 rollout, pre-grouping) have no
+// `group` in the DB — fall back to "khac" so old check history still renders instead
+// of crashing on an undefined lookup.
+export function normalizeFindingGroup(group: FindingGroup | string | null | undefined): FindingGroup {
+  return group && group in GROUP_LABELS ? (group as FindingGroup) : "khac";
+}
 
 export const CATEGORY_LABELS: Record<FindingCategory, string> = {
   so_lieu: "Số liệu",
