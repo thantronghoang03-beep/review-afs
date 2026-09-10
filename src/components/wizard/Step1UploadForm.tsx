@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileDropSlot } from "./FileDropSlot";
+import { DateInput } from "@/components/ui/DateInput";
 import { PreviousChecksPanel } from "./PreviousChecksPanel";
 import { AlertTriangleIcon, BuildingPlusIcon } from "@/components/ui/icons";
 import { useCompany } from "@/lib/context/CompanyContext";
@@ -161,18 +162,16 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Kỳ kế toán năm nay</label>
             <div className="flex items-center gap-2">
-              <input
-                type="date"
+              <DateInput
                 className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                 value={periodCurrentStart}
-                onChange={(e) => setPeriodCurrentStart(e.target.value)}
+                onChange={setPeriodCurrentStart}
               />
               <span className="text-zinc-400">—</span>
-              <input
-                type="date"
+              <DateInput
                 className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                 value={periodCurrentEnd}
-                onChange={(e) => setPeriodCurrentEnd(e.target.value)}
+                onChange={setPeriodCurrentEnd}
               />
             </div>
           </div>
@@ -190,18 +189,16 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
               <>
                 <label className="mb-1 mt-2 block text-xs text-zinc-500">Kỳ kế toán năm trước</label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="date"
+                  <DateInput
                     className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                     value={periodPriorStart}
-                    onChange={(e) => setPeriodPriorStart(e.target.value)}
+                    onChange={setPeriodPriorStart}
                   />
                   <span className="text-zinc-400">—</span>
-                  <input
-                    type="date"
+                  <DateInput
                     className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
                     value={periodPriorEnd}
-                    onChange={(e) => setPeriodPriorEnd(e.target.value)}
+                    onChange={setPeriodPriorEnd}
                   />
                 </div>
               </>

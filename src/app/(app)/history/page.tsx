@@ -6,6 +6,7 @@ import { PERIOD_TYPE_LABELS } from "@/types/check";
 import type { CheckListItem, CheckStatus, PeriodType } from "@/types/check";
 import { DeleteCheckButton } from "@/components/history/DeleteCheckButton";
 import { ClockIcon, EyeIcon } from "@/components/ui/icons";
+import { DateInput } from "@/components/ui/DateInput";
 import { formatDateTime } from "@/lib/format/date";
 import { useCompany } from "@/lib/context/CompanyContext";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -137,20 +138,18 @@ export default function HistoryPage() {
 
         <div>
           <label className="mb-1 block text-xs text-zinc-500">Từ ngày</label>
-          <input
-            type="date"
+          <DateInput
             className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={setDateFrom}
           />
         </div>
         <div>
           <label className="mb-1 block text-xs text-zinc-500">Đến ngày</label>
-          <input
-            type="date"
+          <DateInput
             className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            onChange={setDateTo}
           />
         </div>
 
