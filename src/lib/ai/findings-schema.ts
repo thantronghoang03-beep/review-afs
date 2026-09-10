@@ -1,20 +1,11 @@
 import { z } from "zod";
 
-// Master Prompt v6.1 — Mục 14 điểm 6: bảng chi tiết PHẢI nhóm theo đúng 17 mục này,
-// theo đúng thứ tự này. Giữ enum này khớp với FindingGroup / GROUP_ORDER trong
-// src/types/finding.ts.
+// Nhóm hiển thị bảng chi tiết (8 nhóm theo format mẫu + 1 "khac" dự phòng). Giữ enum
+// này khớp với FindingGroup / GROUP_ORDER trong src/types/finding.ts.
 const GROUP_ENUM = [
   "trang_bia_muc_luc",
-  "bao_cao_bgd",
   "bao_cao_kiem_toan",
-  "bcdkt",
-  "bckqkd",
-  "bclctt",
-  "thuyet_minh",
-  "tinh_toan_lai_bcdkt",
-  "tinh_toan_lai_bckqkd",
-  "tinh_toan_lai_bclctt",
-  "cross_check_ngang",
+  "doi_chieu_tm_so_lieu",
   "erc_irc",
   "ho_so_phap_ly",
   "hieu_luc_phap_ly",

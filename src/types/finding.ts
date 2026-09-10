@@ -17,20 +17,15 @@ export type FindingCategory =
 
 export type FindingSeverity = "critical" | "medium" | "minor";
 
-// Master Prompt v6.1 — Mục 14, thành phần #6: bảng chi tiết PHẢI nhóm theo đúng 17 mục
-// này, theo đúng thứ tự này. Mỗi finding thuộc đúng 1 group.
+// Nhóm hiển thị bảng chi tiết — theo đúng format mẫu người dùng cung cấp (8 nhóm,
+// gộp Báo cáo BGĐ vào Báo cáo kiểm toán, gộp BCĐKT/BCKQKD/BCLCTT + đối chiếu TM +
+// tính toán lại + cross-check ngang thành 1 nhóm số liệu duy nhất), cộng 1 nhóm "Khác"
+// dự phòng cho các phát hiện không thuộc nhóm nào ở trên (Mục 8 format/typo chung).
+// Mỗi finding thuộc đúng 1 group.
 export type FindingGroup =
   | "trang_bia_muc_luc"
-  | "bao_cao_bgd"
   | "bao_cao_kiem_toan"
-  | "bcdkt"
-  | "bckqkd"
-  | "bclctt"
-  | "thuyet_minh"
-  | "tinh_toan_lai_bcdkt"
-  | "tinh_toan_lai_bckqkd"
-  | "tinh_toan_lai_bclctt"
-  | "cross_check_ngang"
+  | "doi_chieu_tm_so_lieu"
   | "erc_irc"
   | "ho_so_phap_ly"
   | "hieu_luc_phap_ly"
@@ -90,19 +85,11 @@ export const SEVERITY_LABELS: Record<FindingSeverity, string> = {
   minor: "Nhẹ",
 };
 
-// Thứ tự nhóm hiển thị bảng chi tiết, đúng nguyên văn thứ tự Mục 14 điểm 6.
+// Thứ tự nhóm hiển thị bảng chi tiết — khớp đúng format mẫu người dùng cung cấp.
 export const GROUP_ORDER: FindingGroup[] = [
   "trang_bia_muc_luc",
-  "bao_cao_bgd",
   "bao_cao_kiem_toan",
-  "bcdkt",
-  "bckqkd",
-  "bclctt",
-  "thuyet_minh",
-  "tinh_toan_lai_bcdkt",
-  "tinh_toan_lai_bckqkd",
-  "tinh_toan_lai_bclctt",
-  "cross_check_ngang",
+  "doi_chieu_tm_so_lieu",
   "erc_irc",
   "ho_so_phap_ly",
   "hieu_luc_phap_ly",
@@ -112,23 +99,15 @@ export const GROUP_ORDER: FindingGroup[] = [
 ];
 
 export const GROUP_LABELS: Record<FindingGroup, string> = {
-  trang_bia_muc_luc: "1. Trang bìa & Mục lục",
-  bao_cao_bgd: "2. Báo cáo BGĐ / HĐTV / TGĐ",
-  bao_cao_kiem_toan: "3. Báo cáo kiểm toán độc lập",
-  bcdkt: "4. Bảng cân đối kế toán (BCĐKT)",
-  bckqkd: "5. Báo cáo kết quả hoạt động kinh doanh (BCKQKD)",
-  bclctt: "6. Báo cáo lưu chuyển tiền tệ (BCLCTT)",
-  thuyet_minh: "7. Thuyết minh báo cáo tài chính",
-  tinh_toan_lai_bcdkt: "8. Tính toán lại — BCĐKT",
-  tinh_toan_lai_bckqkd: "9. Tính toán lại — BCKQKD",
-  tinh_toan_lai_bclctt: "10. Tính toán lại — BCLCTT",
-  cross_check_ngang: "11. Cross-check ngang (3 mặt báo cáo)",
-  erc_irc: "12. ERC / IRC đối chiếu",
-  ho_so_phap_ly: "13. Hồ sơ pháp lý mở rộng",
-  hieu_luc_phap_ly: "14. Hiệu lực căn cứ pháp lý",
-  thuat_ngu: "15. Thuật ngữ & wording",
-  doi_chieu_phien_ban: "16. Đối chiếu với phiên bản liền kề",
-  khac: "17. Khác",
+  trang_bia_muc_luc: "1. Trang bìa & mục lục",
+  bao_cao_kiem_toan: "2. Báo cáo kiểm toán (AR)",
+  doi_chieu_tm_so_lieu: "3. BCĐKT / BCKQKD / BCLCTT — Đối chiếu TM",
+  erc_irc: "4. Đối chiếu với ERC/IRC",
+  ho_so_phap_ly: "5. Đối chiếu hồ sơ pháp lý mở rộng (Legal folder) — Mới v6.0",
+  hieu_luc_phap_ly: "6. Kiểm tra căn cứ pháp lý — Hiệu lực văn bản — Mới v6.0",
+  thuat_ngu: "7. Chuẩn hóa thuật ngữ & wording (Terminology) — Mới v6.0",
+  doi_chieu_phien_ban: "8. Đối chiếu với phiên bản liền kề (Version comparison) — Mới v6.0",
+  khac: "9. Khác",
 };
 
 // Findings created before this grouping existed (v6.1 rollout, pre-grouping) have no
