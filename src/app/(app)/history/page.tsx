@@ -40,6 +40,8 @@ export default function HistoryPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (selectedCompanyId) params.set("companyId", selectedCompanyId);
+      if (user?.role) params.set("viewerRole", user.role);
+      if (user?.name) params.set("viewerName", user.name);
       fetch(`/api/checks?${params.toString()}`)
         .then((res) => res.json())
         // Guard against out-of-order responses: if selectedCompanyId changes again before
@@ -56,7 +58,7 @@ export default function HistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, user?.role, user?.name]);
 
   const reviewers = useMemo(
     () => Array.from(new Set(checks.map((c) => c.createdBy).filter((v): v is string => Boolean(v)))).sort(),
@@ -65,7 +67,7 @@ export default function HistoryPage() {
 
   const filtered = useMemo(() => {
     return checks.filter((c) => {
-      if (user?.role === "employee" && c.createdBy && c.createdBy !== user.name) return false;
+      if (user?.role === "employee" && c.createdBy !== user?.name) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (periodTypeFilter !== "all" && c.periodType !== periodTypeFilter) return false;
       if (reviewerFilter !== "all" && c.createdBy !== reviewerFilter) return false;

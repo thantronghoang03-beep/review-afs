@@ -15,23 +15,30 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/checks")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setChecks(data.checks ?? []);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    function loadChecks() {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (user?.role) params.set("viewerRole", user.role);
+      if (user?.name) params.set("viewerName", user.name);
+      fetch(`/api/checks?${params.toString()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled) setChecks(data.checks ?? []);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }
+    loadChecks();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user?.role, user?.name]);
 
-  // Admin sees every check; everyone else only sees checks they created themselves.
+  // Admin sees every check; everyone else only sees checks they created themselves —
+  // no exception for legacy/missing createdBy, so this can't be misread as "show all".
   const visibleChecks = useMemo(
-    () =>
-      checks.filter((c) => user?.role === "manager" || !c.createdBy || c.createdBy === user?.name).slice(0, 5),
+    () => checks.filter((c) => user?.role === "manager" || c.createdBy === user?.name).slice(0, 5),
     [checks, user]
   );
 

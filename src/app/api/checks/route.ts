@@ -17,11 +17,19 @@ export async function GET(request: Request) {
   const dateFrom = url.searchParams.get("dateFrom") ?? undefined;
   const dateTo = url.searchParams.get("dateTo") ?? undefined;
 
+  // Enforce "employees only see their own checks" server-side, not just by hiding rows
+  // client-side — the client sends who's asking and what role they logged in as; anyone
+  // not "manager" gets forcibly scoped to their own name, ignoring any other createdBy
+  // filter they might have sent (the "reviewer" filter is manager-only in the UI anyway).
+  const viewerRole = url.searchParams.get("viewerRole") ?? undefined;
+  const viewerName = url.searchParams.get("viewerName") ?? undefined;
+  const effectiveCreatedBy = viewerRole === "manager" ? createdBy || undefined : viewerName || undefined;
+
   const checks = await listChecks({
     companyId: companyId || undefined,
     status: (status as CheckStatus) || undefined,
     periodType: (periodType as PeriodType) || undefined,
-    createdBy: createdBy || undefined,
+    createdBy: effectiveCreatedBy,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
   });

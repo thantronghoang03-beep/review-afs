@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CheckListItem, CheckStatus } from "@/types/check";
 import { formatDateTime } from "@/lib/format/date";
 import { ChevronRightIcon, ClockIcon } from "@/components/ui/icons";
+import { useAuth } from "@/lib/context/AuthContext";
 
 const STATUS_STYLES: Record<CheckStatus, string> = {
   processing: "bg-blue-50 text-blue-600",
@@ -23,6 +24,7 @@ interface PreviousChecksPanelProps {
 }
 
 export function PreviousChecksPanel({ companyId, companyName }: PreviousChecksPanelProps) {
+  const { user } = useAuth();
   const [checks, setChecks] = useState<CheckListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +32,11 @@ export function PreviousChecksPanel({ companyId, companyName }: PreviousChecksPa
     let cancelled = false;
     function loadChecks() {
       setLoading(true);
-      fetch(`/api/checks?companyId=${encodeURIComponent(companyId)}`)
+      const params = new URLSearchParams();
+      params.set("companyId", companyId);
+      if (user?.role) params.set("viewerRole", user.role);
+      if (user?.name) params.set("viewerName", user.name);
+      fetch(`/api/checks?${params.toString()}`)
         .then((res) => res.json())
         .then((data) => {
           if (!cancelled) setChecks((data.checks ?? []).slice(0, 5));
@@ -43,7 +49,7 @@ export function PreviousChecksPanel({ companyId, companyName }: PreviousChecksPa
     return () => {
       cancelled = true;
     };
-  }, [companyId]);
+  }, [companyId, user?.role, user?.name]);
 
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-5">
