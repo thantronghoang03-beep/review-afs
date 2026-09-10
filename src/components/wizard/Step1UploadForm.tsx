@@ -46,6 +46,9 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
   // Người dùng chọn chạy tác vụ nào — phải chọn ít nhất 1 trong 2.
   const [runAuditReview, setRunAuditReview] = useState(true);
   const [runRiskAnalysis, setRunRiskAnalysis] = useState(false);
+  // Mô tả hoạt động công ty (nguyên tắc doanh thu, giá vốn, chi phí...) — dùng làm bối
+  // cảnh cho AI khi đánh giá rủi ro. Chỉ hiển thị/gửi khi tick "Phân tích rủi ro".
+  const [businessDescription, setBusinessDescription] = useState("");
 
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId) ?? null;
 
@@ -84,6 +87,9 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     formData.set("ircChanged", fileIrcLatest ? ircChanged : "na");
     formData.set("runAuditReview", runAuditReview ? "true" : "false");
     formData.set("runRiskAnalysis", runRiskAnalysis ? "true" : "false");
+    if (runRiskAnalysis && businessDescription.trim()) {
+      formData.set("businessDescription", businessDescription.trim());
+    }
     filesLegalDossier.forEach((f) => formData.append("fileLegalDossier", f));
 
     onSubmit(formData);
@@ -397,6 +403,25 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           </label>
           {!runAuditReview && !runRiskAnalysis && (
             <p className="text-xs text-red-600">Chưa chọn loại kiểm tra nào.</p>
+          )}
+
+          {runRiskAnalysis && (
+            <div className="pt-1">
+              <label className="mb-1 block text-xs text-zinc-500">
+                Mô tả hoạt động công ty (tùy chọn) — nguyên tắc doanh thu, giá vốn hàng bán, chi phí...
+              </label>
+              <textarea
+                value={businessDescription}
+                onChange={(e) => setBusinessDescription(e.target.value)}
+                rows={4}
+                placeholder="VD: Công ty ghi nhận doanh thu khi hàng đã giao và khách chấp nhận thanh toán; giá vốn hàng bán tính theo phương pháp bình quân gia quyền; chi phí bán hàng gồm hoa hồng đại lý và chi phí vận chuyển..."
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-jpa-400 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-zinc-400">
+                Dùng làm bối cảnh để AI đối chiếu số liệu với thực tế hoạt động khi đánh giá rủi ro. Để trống
+                nếu không có.
+              </p>
+            </div>
           )}
         </div>
 

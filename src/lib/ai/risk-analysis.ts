@@ -8,8 +8,9 @@ const TOOL_NAME = "submit_risk_analysis";
 const SYSTEM_PROMPT = `Bạn là chuyên viên phân tích tài chính của JPA Vietvalues. Nhiệm vụ: đọc Bảng cân đối kế toán, Báo cáo kết quả hoạt động kinh doanh và Báo cáo lưu chuyển tiền tệ (năm nay, và năm trước nếu có) trong nội dung được cung cấp, sau đó:
 
 1. Tính các tỷ số tài chính chuẩn — thanh khoản (Current ratio, Quick ratio), đòn bẩy (Debt/Equity, Debt/Assets), khả năng sinh lời (Gross margin, Net margin, ROA, ROE), hiệu quả hoạt động (Asset turnover, Inventory days, Receivable days) — cho năm nay và, nếu có đủ số liệu so sánh, năm trước. Chỉ tính khi có đủ dữ liệu; nếu thiếu, bỏ qua tỷ số đó thay vì suy đoán hoặc bịa số.
-2. Từ các tỷ số và nội dung báo cáo, nêu các cảnh báo rủi ro cụ thể có căn cứ số liệu rõ ràng (rủi ro hoạt động liên tục, rủi ro thanh khoản, đòn bẩy tăng bất thường, biên lợi nhuận giảm mạnh, dòng tiền kinh doanh âm kéo dài...). Không suy đoán mơ hồ — mỗi cảnh báo phải trích dẫn số liệu cụ thể làm bằng chứng. "high" chỉ dùng khi có bằng chứng số liệu rõ ràng và nghiêm trọng.
-3. Viết tóm tắt ngắn gọn (3-5 câu) đánh giá tổng quan.
+2. Nếu người dùng cung cấp "MÔ TẢ HOẠT ĐỘNG CÔNG TY" (nguyên tắc ghi nhận doanh thu, giá vốn hàng bán, cơ cấu chi phí...), dùng thông tin đó làm bối cảnh để đánh giá xem số liệu và biến động trên báo cáo có khớp với mô tả hoạt động thực tế không — ví dụ: biên lợi nhuận gộp có phù hợp với ngành/mô hình kinh doanh đã mô tả, chi phí có tăng bất thường so với nguyên tắc ghi nhận đã nêu, doanh thu ghi nhận có nhất quán với nguyên tắc mô tả. Nếu không có mô tả, bỏ qua bước đối chiếu này, không suy đoán.
+3. Từ các tỷ số, bối cảnh hoạt động (nếu có), và nội dung báo cáo, nêu các cảnh báo rủi ro cụ thể có căn cứ số liệu rõ ràng (rủi ro hoạt động liên tục, rủi ro thanh khoản, đòn bẩy tăng bất thường, biên lợi nhuận giảm mạnh, dòng tiền kinh doanh âm kéo dài, số liệu không khớp với mô tả hoạt động đã cung cấp...). Không suy đoán mơ hồ — mỗi cảnh báo phải trích dẫn số liệu cụ thể làm bằng chứng. "high" chỉ dùng khi có bằng chứng số liệu rõ ràng và nghiêm trọng.
+4. Viết tóm tắt ngắn gọn (3-5 câu) đánh giá tổng quan.
 
 Đây là phân tích ĐỘC LẬP với quy trình review đối chiếu VN/EN — không cần kiểm tra chính tả, format, hay đối chiếu ERC/IRC. Chỉ tập trung vào số liệu và rủi ro tài chính.
 
@@ -20,12 +21,18 @@ interface RiskAnalysisInput {
   fiscalYear: string;
   vnDocument: string;
   enDocument: string;
+  // Người dùng mô tả tự do về hoạt động công ty (nguyên tắc doanh thu, giá vốn, cơ cấu
+  // chi phí...) khi tick "Phân tích rủi ro báo cáo tài chính" — tùy chọn, dùng làm bối
+  // cảnh để đối chiếu số liệu với thực tế hoạt động, không bắt buộc.
+  businessDescription: string | null;
 }
 
 function buildUserMessage(input: RiskAnalysisInput): string {
   return [
     `Khách hàng: ${input.clientName}`,
     `Năm tài chính: ${input.fiscalYear}`,
+    ``,
+    `MÔ TẢ HOẠT ĐỘNG CÔNG TY (do người dùng cung cấp): ${input.businessDescription?.trim() || "N/A — không có mô tả, bỏ qua bước đối chiếu bối cảnh hoạt động"}`,
     ``,
     `=== BÁO CÁO TIẾNG VIỆT (VN) ===`,
     input.vnDocument,

@@ -154,6 +154,7 @@ export async function runCheckJob(checkId: string, options: RunCheckOptions = {}
         fiscalYear: check.fiscalYear,
         vnDocument,
         enDocument,
+        businessDescription: check.businessDescription,
       });
       riskAnalysisResult = {
         ratios: risk.ratios.map((r) => ({

@@ -71,7 +71,9 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
         </>
       )}
 
-      {check.runRiskAnalysis && check.riskAnalysis && <RiskAnalysisSection analysis={check.riskAnalysis} />}
+      {check.runRiskAnalysis && check.riskAnalysis && (
+        <RiskAnalysisSection analysis={check.riskAnalysis} businessDescription={check.businessDescription} />
+      )}
 
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-zinc-200 bg-white p-4">
         {check.runAuditReview && (

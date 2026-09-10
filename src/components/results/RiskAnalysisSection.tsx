@@ -16,7 +16,12 @@ function formatValue(value: number | null, unit: string): string {
   return `${formatted}${unit === "%" ? "%" : ` ${unit}`}`;
 }
 
-export function RiskAnalysisSection({ analysis }: { analysis: RiskAnalysis }) {
+interface RiskAnalysisSectionProps {
+  analysis: RiskAnalysis;
+  businessDescription?: string | null;
+}
+
+export function RiskAnalysisSection({ analysis, businessDescription }: RiskAnalysisSectionProps) {
   const ratiosByCategory = RATIO_CATEGORY_ORDER.map((category) => ({
     category,
     label: RISK_RATIO_CATEGORY_LABELS[category],
@@ -26,6 +31,13 @@ export function RiskAnalysisSection({ analysis }: { analysis: RiskAnalysis }) {
   return (
     <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5">
       <h4 className="text-sm font-bold text-zinc-800">Phân tích rủi ro báo cáo tài chính</h4>
+
+      {businessDescription && (
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
+          <div className="mb-1 font-semibold text-zinc-500">Mô tả hoạt động công ty (do người dùng cung cấp)</div>
+          {businessDescription}
+        </div>
+      )}
 
       {analysis.summary && (
         <div className="rounded-xl border border-jpa-teal/30 bg-jpa-teal/10 p-4 text-sm text-jpa-700">

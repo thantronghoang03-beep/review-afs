@@ -51,6 +51,10 @@ create table if not exists checks (
   run_audit_review         boolean not null default true,
   run_risk_analysis        boolean not null default false,
   risk_analysis_json       jsonb,
+  -- Mô tả hoạt động công ty do người dùng nhập (nguyên tắc doanh thu, giá vốn, chi
+  -- phí...) khi tick "Phân tích rủi ro báo cáo tài chính" — tùy chọn, dùng làm bối cảnh
+  -- cho AI khi đánh giá rủi ro.
+  business_description     text,
 
   created_at               timestamptz not null default now(),
   started_at               timestamptz,
@@ -89,6 +93,7 @@ alter table checks add column if not exists overall_notes text;
 alter table checks add column if not exists run_audit_review boolean not null default true;
 alter table checks add column if not exists run_risk_analysis boolean not null default false;
 alter table checks add column if not exists risk_analysis_json jsonb;
+alter table checks add column if not exists business_description text;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);

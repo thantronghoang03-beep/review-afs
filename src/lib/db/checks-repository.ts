@@ -25,6 +25,7 @@ interface CreateCheckInput {
   files: CheckFilePaths;
   runAuditReview: boolean;
   runRiskAnalysis: boolean;
+  businessDescription: string | null;
 }
 
 export function generateCheckId(): string {
@@ -61,6 +62,7 @@ function rowToCheck(row: Record<string, unknown>): Check {
     runAuditReview: (row.run_audit_review as boolean) ?? true,
     runRiskAnalysis: (row.run_risk_analysis as boolean) ?? false,
     riskAnalysis: (row.risk_analysis_json as RiskAnalysis) ?? null,
+    businessDescription: (row.business_description as string) ?? null,
     createdAt: row.created_at as string,
     startedAt: (row.started_at as string) ?? null,
     completedAt: (row.completed_at as string) ?? null,
@@ -89,6 +91,7 @@ export async function createCheck(input: CreateCheckInput): Promise<Check> {
     file_legal_dossier_paths: input.files.fileLegalDossierPaths,
     run_audit_review: input.runAuditReview,
     run_risk_analysis: input.runRiskAnalysis,
+    business_description: input.businessDescription,
     status: "processing",
   });
   if (error) throw error;

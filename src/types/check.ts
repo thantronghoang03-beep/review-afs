@@ -56,6 +56,10 @@ export interface Check extends CheckFilePaths {
   runAuditReview: boolean;
   runRiskAnalysis: boolean;
   riskAnalysis: RiskAnalysis | null;
+  // Mô tả tự do về hoạt động công ty (nguyên tắc doanh thu, giá vốn, chi phí...), người
+  // dùng nhập khi tick "Phân tích rủi ro báo cáo tài chính" — tùy chọn, dùng làm bối
+  // cảnh cho AI khi đánh giá rủi ro. Null nếu không chọn phân tích rủi ro hoặc để trống.
+  businessDescription: string | null;
 
   createdAt: string;
   startedAt: string | null;
