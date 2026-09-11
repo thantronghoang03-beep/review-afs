@@ -79,7 +79,7 @@ export const findingsInputSchema = {
             type: "string",
             enum: GROUP_ENUM,
             description:
-              "Which of the 17 Mục 14-điểm-6 display groups this finding belongs to (exactly one) — used to render the detail table grouped and ordered per spec, e.g. a Mục 9B legal-validity finding is 'hieu_luc_phap_ly', a BCĐKT recomputation is 'tinh_toan_lai_bcdkt'.",
+              "Which of the 10 display groups this finding belongs to (exactly one, MUST be one of the enum values above, no other string) — used to render the detail table grouped and ordered per spec, e.g. a Mục 9B legal-validity finding is 'hieu_luc_phap_ly', a Mục 11A logic-check finding is 'kiem_tra_logic'.",
           },
           field_label: { type: "string", description: "Mục kiểm tra — short label for this checked item." },
           page_vn: { type: ["integer", "null"] },
@@ -148,6 +148,20 @@ function lenientEnum<T extends readonly [string, ...string[]]>(values: T) {
   return z.preprocess((val) => (typeof val === "string" ? val.trim().toLowerCase() : val), z.enum(values));
 }
 
+// "group" đặc biệt cần rộng lượng hơn nữa: nó không ảnh hưởng gì tới nghiệp vụ (chỉ
+// dùng để gom nhóm hiển thị bảng), nên nếu model lỡ trả về 1 giá trị lạ không khớp
+// enum (ví dụ do hiểu nhầm mô tả/prompt), rơi về "khac" thay vì làm hỏng validation
+// của CẢ response — tránh mất toàn bộ finding hợp lệ khác chỉ vì 1 field không quan
+// trọng của 1 dòng.
+function lenientGroupEnum<T extends readonly [string, ...string[]]>(values: T) {
+  return z.preprocess((val) => {
+    const normalized = typeof val === "string" ? val.trim().toLowerCase() : val;
+    return typeof normalized === "string" && (values as readonly string[]).includes(normalized)
+      ? normalized
+      : "khac";
+  }, z.enum(values));
+}
+
 export const findingsResponseZod = z.object({
   period_type_detected: lenientEnum(["first", "short_prior", "normal", "dissolution"] as const),
   categories: z.object({
@@ -162,7 +176,7 @@ export const findingsResponseZod = z.object({
   findings: z.array(
     z.object({
       section: lenientString,
-      group: lenientEnum(GROUP_ENUM),
+      group: lenientGroupEnum(GROUP_ENUM),
       field_label: lenientString,
       page_vn: lenientNullableInt,
       page_en: lenientNullableInt,
