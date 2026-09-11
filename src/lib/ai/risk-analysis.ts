@@ -1,24 +1,20 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient, CLAUDE_MODEL } from "./client";
+import { buildSystemPrompt } from "./system-prompt";
 import { riskAnalysisInputSchema, riskAnalysisResponseZod, type RiskAnalysisResponse } from "./risk-analysis-schema";
 import { isMockReviewEnabled, buildMockRiskAnalysisResponse } from "./mock-review";
+import type { PeriodType } from "@/types/check";
 
 const TOOL_NAME = "submit_risk_analysis";
-
-const SYSTEM_PROMPT = `Bạn là chuyên viên phân tích tài chính của JPA Vietvalues. Nhiệm vụ: đọc Bảng cân đối kế toán, Báo cáo kết quả hoạt động kinh doanh và Báo cáo lưu chuyển tiền tệ (năm nay, và năm trước nếu có) trong nội dung được cung cấp, sau đó:
-
-1. Tính các tỷ số tài chính chuẩn — thanh khoản (Current ratio, Quick ratio), đòn bẩy (Debt/Equity, Debt/Assets), khả năng sinh lời (Gross margin, Net margin, ROA, ROE), hiệu quả hoạt động (Asset turnover, Inventory days, Receivable days) — cho năm nay và, nếu có đủ số liệu so sánh, năm trước. Chỉ tính khi có đủ dữ liệu; nếu thiếu, bỏ qua tỷ số đó thay vì suy đoán hoặc bịa số.
-2. Nếu người dùng cung cấp "MÔ TẢ HOẠT ĐỘNG CÔNG TY" (nguyên tắc ghi nhận doanh thu, giá vốn hàng bán, cơ cấu chi phí...), dùng thông tin đó làm bối cảnh để đánh giá xem số liệu và biến động trên báo cáo có khớp với mô tả hoạt động thực tế không — ví dụ: biên lợi nhuận gộp có phù hợp với ngành/mô hình kinh doanh đã mô tả, chi phí có tăng bất thường so với nguyên tắc ghi nhận đã nêu, doanh thu ghi nhận có nhất quán với nguyên tắc mô tả. Nếu không có mô tả, bỏ qua bước đối chiếu này, không suy đoán.
-3. Từ các tỷ số, bối cảnh hoạt động (nếu có), và nội dung báo cáo, nêu các cảnh báo rủi ro cụ thể có căn cứ số liệu rõ ràng (rủi ro hoạt động liên tục, rủi ro thanh khoản, đòn bẩy tăng bất thường, biên lợi nhuận giảm mạnh, dòng tiền kinh doanh âm kéo dài, số liệu không khớp với mô tả hoạt động đã cung cấp...). Không suy đoán mơ hồ — mỗi cảnh báo phải trích dẫn số liệu cụ thể làm bằng chứng. "high" chỉ dùng khi có bằng chứng số liệu rõ ràng và nghiêm trọng.
-4. Viết tóm tắt ngắn gọn (3-5 câu) đánh giá tổng quan.
-
-Đây là phân tích ĐỘC LẬP với quy trình review đối chiếu VN/EN — không cần kiểm tra chính tả, format, hay đối chiếu ERC/IRC. Chỉ tập trung vào số liệu và rủi ro tài chính.
-
-Trả kết quả bằng cách gọi tool "${TOOL_NAME}" với dữ liệu JSON đúng schema đã cung cấp. Không sinh HTML, không sinh markdown, không viết prose bên ngoài lời gọi tool.`;
 
 interface RiskAnalysisInput {
   clientName: string;
   fiscalYear: string;
+  periodType: PeriodType;
+  periodCurrentStart: string;
+  periodCurrentEnd: string;
+  periodPriorStart: string | null;
+  periodPriorEnd: string | null;
   vnDocument: string;
   enDocument: string;
   // Người dùng mô tả tự do về hoạt động công ty (nguyên tắc doanh thu, giá vốn, cơ cấu
@@ -27,19 +23,49 @@ interface RiskAnalysisInput {
   businessDescription: string | null;
 }
 
+// Mục 2 (v6.6) — cùng bộ thẻ input với chế độ kiem_tra_bao_cao, nhưng chế độ này (Mục
+// 2.1) chỉ cần BCTC VN/EN + niên độ làm nền cho Mục 11B/11C — không cần ERC/IRC/hồ sơ
+// pháp lý/bản liền kề (những thẻ đó thuộc phạm vi kiem_tra_bao_cao). "mo_ta_hoat_dong"
+// là thẻ mở rộng riêng của app (không có trong Mục 2 gốc) để truyền bối cảnh hoạt động.
 function buildUserMessage(input: RiskAnalysisInput): string {
-  return [
-    `Khách hàng: ${input.clientName}`,
-    `Năm tài chính: ${input.fiscalYear}`,
-    ``,
-    `MÔ TẢ HOẠT ĐỘNG CÔNG TY (do người dùng cung cấp): ${input.businessDescription?.trim() || "N/A — không có mô tả, bỏ qua bước đối chiếu bối cảnh hoạt động"}`,
-    ``,
-    `=== BÁO CÁO TIẾNG VIỆT (VN) ===`,
-    input.vnDocument,
-    ``,
-    `=== BÁO CÁO TIẾNG ANH (EN) ===`,
-    input.enDocument,
+  const notes = [
+    `THÔNG TIN KHÁCH HÀNG:`,
+    `- Tên khách hàng: ${input.clientName}`,
+    `- Năm tài chính: ${input.fiscalYear}`,
+    `- PERIOD_TYPE (đã xác định trước, không cần suy luận lại): ${input.periodType}`,
   ].join("\n");
+
+  const tags = [
+    ["che_do_chay", "phan_tich_rui_ro"],
+    ["bao_cao_en", input.enDocument],
+    ["bao_cao_vn", input.vnDocument],
+    [
+      "nien_do_nam_truoc",
+      input.periodPriorStart && input.periodPriorEnd
+        ? `${input.periodPriorStart} đến ${input.periodPriorEnd}`
+        : "N/A",
+    ],
+    ["nien_do_nam_nay", `${input.periodCurrentStart} đến ${input.periodCurrentEnd}`],
+    ["mo_ta_hoat_dong", input.businessDescription?.trim() || "N/A — không có mô tả, bỏ qua bước đối chiếu bối cảnh hoạt động"],
+  ] as const;
+
+  const tagBlocks = tags.map(([tag, content]) => `<${tag}>\n${content}\n</${tag}>`);
+
+  return [notes, ``, ...tagBlocks].join("\n");
+}
+
+let cachedSystemBlocks: Anthropic.TextBlockParam[] | null = null;
+function getSystemBlocks(): Anthropic.TextBlockParam[] {
+  if (!cachedSystemBlocks) {
+    cachedSystemBlocks = [
+      {
+        type: "text",
+        text: buildSystemPrompt("phan_tich_rui_ro"),
+        cache_control: { type: "ephemeral" },
+      },
+    ];
+  }
+  return cachedSystemBlocks;
 }
 
 export async function runRiskAnalysis(input: RiskAnalysisInput): Promise<RiskAnalysisResponse> {
@@ -49,10 +75,12 @@ export async function runRiskAnalysis(input: RiskAnalysisInput): Promise<RiskAna
   }
 
   const client = getAnthropicClient();
+  // Mục 0 điểm 6 (v6.6): web_search chỉ cần cho Mục 9B, ngoài phạm vi chế độ này —
+  // không bật tool này ở đây để giảm độ trễ/chi phí, dùng tool_choice ép buộc luôn.
   const stream = client.messages.stream({
     model: CLAUDE_MODEL,
-    max_tokens: 8000,
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+    max_tokens: 16000,
+    system: getSystemBlocks(),
     tools: [
       {
         name: TOOL_NAME,

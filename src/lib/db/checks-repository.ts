@@ -63,6 +63,8 @@ function rowToCheck(row: Record<string, unknown>): Check {
     runRiskAnalysis: (row.run_risk_analysis as boolean) ?? false,
     riskAnalysis: (row.risk_analysis_json as RiskAnalysis) ?? null,
     businessDescription: (row.business_description as string) ?? null,
+    auditReviewError: (row.audit_review_error as string) ?? null,
+    riskAnalysisError: (row.risk_analysis_error as string) ?? null,
     createdAt: row.created_at as string,
     startedAt: (row.started_at as string) ?? null,
     completedAt: (row.completed_at as string) ?? null,
@@ -127,12 +129,18 @@ export async function markCheckDone(
     };
     // Kết quả phân tích rủi ro tài chính — vắng mặt nếu người dùng không chọn chạy.
     riskAnalysis?: RiskAnalysis;
+    // v6.6 — lỗi riêng của từng chế độ khi chọn cả 2 mà chỉ 1 cái thất bại (xem
+    // run-check.ts) — null nếu chế độ đó không được chọn hoặc chạy thành công.
+    auditReviewError?: string | null;
+    riskAnalysisError?: string | null;
   }
 ): Promise<void> {
   const supabase = getSupabase();
   const update: Record<string, unknown> = {
     status: "done",
     completed_at: new Date().toISOString(),
+    audit_review_error: data.auditReviewError ?? null,
+    risk_analysis_error: data.riskAnalysisError ?? null,
   };
   if (data.auditReview) {
     update.categories_checked_json = data.auditReview.categoriesChecked;

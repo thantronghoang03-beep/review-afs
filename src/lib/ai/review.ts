@@ -75,6 +75,7 @@ function buildUserMessage(input: ReviewInput): string {
   ].join("\n");
 
   const tags = [
+    ["che_do_chay", "kiem_tra_bao_cao"],
     ["bao_cao_en", input.enDocument],
     ["bao_cao_vn", input.vnDocument],
     ["erc_moi_nhat", input.ercDocument ?? "N/A"],
@@ -101,7 +102,7 @@ export async function countReviewTokens(input: ReviewInput): Promise<number> {
   const client = getAnthropicClient();
   const result = await client.messages.countTokens({
     model: CLAUDE_MODEL,
-    system: buildSystemPrompt(),
+    system: buildSystemPrompt("kiem_tra_bao_cao"),
     messages: [{ role: "user", content: buildUserMessage(input) }],
   });
   return result.input_tokens;
@@ -115,13 +116,19 @@ export class ReviewInputTooLargeError extends Error {
   }
 }
 
-const SYSTEM_BLOCKS: Anthropic.TextBlockParam[] = [
-  {
-    type: "text",
-    text: buildSystemPrompt(),
-    cache_control: { type: "ephemeral" },
-  },
-];
+let cachedSystemBlocks: Anthropic.TextBlockParam[] | null = null;
+function getSystemBlocks(): Anthropic.TextBlockParam[] {
+  if (!cachedSystemBlocks) {
+    cachedSystemBlocks = [
+      {
+        type: "text",
+        text: buildSystemPrompt("kiem_tra_bao_cao"),
+        cache_control: { type: "ephemeral" },
+      },
+    ];
+  }
+  return cachedSystemBlocks;
+}
 
 // Mục 0 điểm 3 / Mục 9B (v6.1): bắt buộc bật web_search để model tự tra cứu hiệu lực
 // Luật/Nghị định/Thông tư trước khi kết luận Critical. web_search là "server tool" —
@@ -180,7 +187,7 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
   const firstStream = client.messages.stream({
     model: CLAUDE_MODEL,
     max_tokens: 32000,
-    system: SYSTEM_BLOCKS,
+    system: getSystemBlocks(),
     tools: REVIEW_TOOLS,
     tool_choice: { type: "auto" },
     messages: [userMessage],
@@ -197,7 +204,7 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
     const followUpStream = client.messages.stream({
       model: CLAUDE_MODEL,
       max_tokens: 32000,
-      system: SYSTEM_BLOCKS,
+      system: getSystemBlocks(),
       tools: REVIEW_TOOLS,
       tool_choice: { type: "tool", name: TOOL_NAME },
       messages: [

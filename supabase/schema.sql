@@ -55,6 +55,11 @@ create table if not exists checks (
   -- phí...) khi tick "Phân tích rủi ro báo cáo tài chính" — tùy chọn, dùng làm bối cảnh
   -- cho AI khi đánh giá rủi ro.
   business_description     text,
+  -- v6.6 — mỗi chế độ là 1 lệnh gọi API độc lập (Mục 2.1); nếu chọn cả 2 mà chỉ 1 cái
+  -- lỗi, status vẫn 'done' với kết quả của cái thành công, lỗi của cái thất bại ghi ở
+  -- đây để hiển thị banner riêng.
+  audit_review_error       text,
+  risk_analysis_error      text,
 
   created_at               timestamptz not null default now(),
   started_at               timestamptz,
@@ -94,6 +99,8 @@ alter table checks add column if not exists run_audit_review boolean not null de
 alter table checks add column if not exists run_risk_analysis boolean not null default false;
 alter table checks add column if not exists risk_analysis_json jsonb;
 alter table checks add column if not exists business_description text;
+alter table checks add column if not exists audit_review_error text;
+alter table checks add column if not exists risk_analysis_error text;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);

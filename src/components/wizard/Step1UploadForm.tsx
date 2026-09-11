@@ -404,6 +404,11 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           {!runAuditReview && !runRiskAnalysis && (
             <p className="text-xs text-red-600">Chưa chọn loại kiểm tra nào.</p>
           )}
+          {runAuditReview && runRiskAnalysis && (
+            <p className="text-xs text-zinc-400">
+              Chọn cả 2 sẽ chạy 2 lượt phân tích riêng biệt (chi phí gọi API gấp đôi so với chỉ chọn 1 loại).
+            </p>
+          )}
 
           {runRiskAnalysis && (
             <div className="pt-1">

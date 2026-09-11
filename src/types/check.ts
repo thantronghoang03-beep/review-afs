@@ -61,6 +61,12 @@ export interface Check extends CheckFilePaths {
   // cảnh cho AI khi đánh giá rủi ro. Null nếu không chọn phân tích rủi ro hoặc để trống.
   businessDescription: string | null;
 
+  // v6.6 — mỗi chế độ chạy độc lập (2 lệnh gọi API riêng); nếu chọn cả 2 và chỉ 1 cái
+  // lỗi, status vẫn "done" với kết quả của cái thành công, và lỗi của cái thất bại được
+  // ghi ở đây để hiển thị banner riêng — không làm mất kết quả đã chạy thành công.
+  auditReviewError: string | null;
+  riskAnalysisError: string | null;
+
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;

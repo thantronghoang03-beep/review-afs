@@ -182,31 +182,98 @@ export function buildMockFindingsResponse(input: MockReviewInput): FindingsRespo
 
 export function buildMockRiskAnalysisResponse(): RiskAnalysisResponse {
   return {
+    kpis: [
+      { label: "Doanh thu thuần", value: "27,67 tỷ VND", comparison: "+8% so với năm trước", tone: "good" },
+      { label: "Lợi nhuận sau thuế", value: "1,66 tỷ VND", comparison: "-12% so với năm trước", tone: "warn" },
+      { label: "Dòng tiền thuần HĐKD", value: "0,95 tỷ VND", comparison: "Dương, giảm so với năm trước", tone: "warn" },
+      { label: "Biên lợi nhuận gộp", value: "32,5%", comparison: "-1,6 điểm % so với năm trước", tone: "warn" },
+    ],
+    overall_risk: {
+      level: "medium",
+      summary:
+        "[MOCK] Rủi ro chính: khả năng thanh toán ngắn hạn giảm nhẹ (11C.3), phụ thuộc bên liên quan ở mức trung bình (11C.4). Không phát hiện dấu hiệu gian lận (11C.2) hay vấn đề hoạt động liên tục nghiêm trọng.",
+    },
     ratios: [
       { category: "thanh_khoan", name: "Current ratio (Khả năng thanh toán hiện hành)", unit: "lần", current_year_value: 1.8, prior_year_value: 2.1, note: "[MOCK]" },
       { category: "thanh_khoan", name: "Quick ratio (Khả năng thanh toán nhanh)", unit: "lần", current_year_value: 1.2, prior_year_value: 1.5, note: "[MOCK]" },
-      { category: "don_bay", name: "Debt/Equity", unit: "lần", current_year_value: 0.9, prior_year_value: 0.7, note: "[MOCK]" },
-      { category: "don_bay", name: "Debt/Assets", unit: "%", current_year_value: 47, prior_year_value: 41, note: "[MOCK]" },
-      { category: "sinh_loi", name: "Gross margin", unit: "%", current_year_value: 32.5, prior_year_value: 34.1, note: "[MOCK]" },
-      { category: "sinh_loi", name: "Net margin", unit: "%", current_year_value: 6.2, prior_year_value: 8.0, note: "[MOCK]" },
+      { category: "don_bay", name: "Nợ phải trả / Tổng tài sản", unit: "%", current_year_value: 47, prior_year_value: 41, note: "[MOCK]" },
+      { category: "don_bay", name: "Nợ phải trả / Vốn chủ sở hữu", unit: "lần", current_year_value: 0.9, prior_year_value: 0.7, note: "[MOCK]" },
+      { category: "sinh_loi", name: "Biên lợi nhuận gộp", unit: "%", current_year_value: 32.5, prior_year_value: 34.1, note: "[MOCK]" },
+      { category: "sinh_loi", name: "Biên lợi nhuận ròng", unit: "%", current_year_value: 6.2, prior_year_value: 8.0, note: "[MOCK]" },
       { category: "sinh_loi", name: "ROA", unit: "%", current_year_value: 5.1, prior_year_value: 6.4, note: "[MOCK]" },
       { category: "sinh_loi", name: "ROE", unit: "%", current_year_value: 9.6, prior_year_value: 11.2, note: "[MOCK]" },
-      { category: "hieu_qua_hoat_dong", name: "Asset turnover", unit: "lần", current_year_value: 0.82, prior_year_value: 0.80, note: "[MOCK]" },
-      { category: "hieu_qua_hoat_dong", name: "Receivable days", unit: "ngày", current_year_value: 58, prior_year_value: 45, note: "[MOCK]" },
+      { category: "hieu_qua_hoat_dong", name: "Vòng quay hàng tồn kho", unit: "lần", current_year_value: 6.1, prior_year_value: 6.3, note: "[MOCK]" },
+      { category: "hieu_qua_hoat_dong", name: "Số ngày thu tiền bình quân (DSO)", unit: "ngày", current_year_value: 58, prior_year_value: 45, note: "[MOCK]" },
     ],
-    warnings: [
+    variances: [
       {
-        title: "[MOCK] Đòn bẩy tài chính tăng",
-        level: "medium",
-        description: "[MOCK] Debt/Equity tăng từ 0.7 lên 0.9 lần, cho thấy công ty phụ thuộc nhiều hơn vào nợ vay để tài trợ hoạt động.",
+        label: "Chi phí quản lý doanh nghiệp",
+        current_year_value: 6_911_817_657,
+        prior_year_value: 5_200_000_000,
+        percent_change: 33,
+        level: "error",
+        note: "[MOCK] Biến động +33% không có thuyết minh giải thích nguyên nhân — cần yêu cầu khách hàng giải trình trước khi phát hành.",
       },
       {
-        title: "[MOCK] Vòng quay phải thu chậm lại",
-        level: "low",
-        description: "[MOCK] Receivable days tăng từ 45 lên 58 ngày — cần theo dõi khả năng thu hồi công nợ.",
+        label: "Thu nhập khác",
+        current_year_value: 2_291_805,
+        prior_year_value: 0,
+        percent_change: null,
+        level: "warning",
+        note: "[MOCK] Khoản mục phát sinh mới so với kỳ trước — cần xác nhận bản chất giao dịch.",
+      },
+    ],
+    risk_items: [
+      {
+        group: "trong_yeu",
+        title: "Mức trọng yếu tổng thể tham khảo (PM)",
+        level: "pass",
+        page: null,
+        value_vn: "≈ 830 triệu VND (tham chiếu 0.5%–1% Doanh thu thuần)",
+        summary_en: "Reference overall materiality based on 0.5%-1% of net revenue.",
+        assessment:
+          "[MOCK] Đây là mức trọng yếu tham khảo do model tính toán — cần đối chiếu với Hồ sơ kiểm toán và chính sách trọng yếu thực tế của JPA cho khách hàng này trước khi sử dụng chính thức.",
+      },
+      {
+        group: "gian_lan",
+        title: "Dấu hiệu gian lận & sai sót trọng yếu",
+        level: "pass",
+        page: null,
+        value_vn: "Không phát hiện dấu hiệu bất thường",
+        summary_en: "No significant fraud indicators observed.",
+        assessment: "[MOCK] Không có dấu hiệu đáng chú ý theo dữ liệu hiện có.",
+      },
+      {
+        group: "hoat_dong_lien_tuc",
+        title: "Khả năng thanh toán ngắn hạn giảm",
+        level: "warning",
+        page: 7,
+        value_vn: "Current ratio giảm từ 2.1 xuống 1.8 lần",
+        summary_en: "Current ratio decreased from 2.1x to 1.8x year over year.",
+        assessment:
+          "[MOCK] Khả năng thanh toán ngắn hạn ở mức thấp hơn năm trước — cần lưu ý khi đánh giá giả định hoạt động liên tục.",
+      },
+      {
+        group: "ben_lien_quan",
+        title: "Mức độ phụ thuộc bên liên quan",
+        level: "warning",
+        page: 18,
+        value_vn: "Doanh thu với bên liên quan chiếm 32% tổng doanh thu",
+        summary_en: "Related-party revenue accounts for 32% of total revenue.",
+        assessment:
+          "[MOCK] Mức độ phụ thuộc vào bên liên quan cao — cần xem xét thêm về tính độc lập trong xác định giá giao dịch.",
+      },
+      {
+        group: "thue",
+        title: "Chênh lệch lợi nhuận kế toán và thu nhập chịu thuế",
+        level: "pass",
+        page: 20,
+        value_vn: "Chênh lệch 8% — đã liệt kê đầy đủ trong Note thuế TNDN",
+        summary_en: "8% difference, fully itemized in the CIT note.",
+        assessment: "[MOCK] Không có vấn đề đáng chú ý.",
       },
     ],
     summary:
-      "[MOCK — CHẾ ĐỘ THỬ NGHIỆM] Sức khỏe tài chính nhìn chung ổn định nhưng có dấu hiệu suy giảm nhẹ về khả năng thanh toán và biên lợi nhuận so với năm trước; đòn bẩy tài chính tăng cần theo dõi.",
+      "[MOCK — CHẾ ĐỘ THỬ NGHIỆM] Sức khỏe tài chính nhìn chung ổn định nhưng có dấu hiệu suy giảm nhẹ về khả năng thanh toán và biên lợi nhuận so với năm trước; chi phí quản lý tăng bất thường cần giải trình.",
   };
 }
