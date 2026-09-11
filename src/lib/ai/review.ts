@@ -189,9 +189,14 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
   // reports; max_tokens this high requires streaming per the SDK's long-request rule.
   // tool_choice is "auto" (not forced) here so the model is free to call "web_search"
   // one or more times first, per Mục 9B — a forced single-tool choice would block that.
+  // 64000 (not 32000): Sonnet 5 runs adaptive thinking by default and thinking tokens
+  // count against max_tokens same as visible output — a report with many web_search
+  // round-trips + a long findings array could exhaust a smaller budget mid-JSON before
+  // ever reaching "findings"/"summary", producing a syntactically-valid but incomplete
+  // tool_use.input (missing required keys) instead of a clean truncation error.
   const firstStream = client.messages.stream({
     model: CLAUDE_MODEL,
-    max_tokens: 32000,
+    max_tokens: 64000,
     system: getSystemBlocks(),
     tools: REVIEW_TOOLS,
     tool_choice: { type: "auto" },
@@ -208,7 +213,7 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
     // per system-prompt.ts: "LƯỢT GỌI TOOL CUỐI CÙNG bắt buộc phải là submit_review_findings".
     const followUpStream = client.messages.stream({
       model: CLAUDE_MODEL,
-      max_tokens: 32000,
+      max_tokens: 64000,
       system: getSystemBlocks(),
       tools: REVIEW_TOOLS,
       tool_choice: { type: "tool", name: TOOL_NAME },
@@ -228,6 +233,19 @@ export async function runReview(input: ReviewInput): Promise<ReviewResult> {
 
   if (!toolUse) {
     throw new Error("Claude không trả về tool_use block như yêu cầu.");
+  }
+
+  // Nếu bị cắt giữa chừng vì hết max_tokens (kể cả token dùng cho "suy nghĩ" nội bộ —
+  // Sonnet 5 mặc định bật adaptive thinking, tính chung vào max_tokens), tool_use.input
+  // có thể là JSON hợp lệ về cú pháp nhưng THIẾU hẳn các field bắt buộc cuối schema
+  // ("findings"/"summary") vì model chưa sinh tới đó — Zod sẽ báo "expected array,
+  // received undefined" rất khó hiểu. Bắt lỗi này sớm, báo rõ nguyên nhân thay vì để
+  // lỗi Zod thô rơi thẳng vào audit_review_error.
+  const lastResponse = followUpResponse ?? firstResponse;
+  if (lastResponse.stop_reason === "max_tokens") {
+    throw new Error(
+      "Claude bị cắt giữa chừng vì báo cáo quá dài/quá nhiều phát hiện, chưa kịp hoàn thành kết quả (hết max_tokens). Vui lòng thử lại — nếu vẫn lặp lại, có thể cần chia nhỏ báo cáo hoặc báo cho đội kỹ thuật để tăng giới hạn."
+    );
   }
 
   const data = findingsResponseZod.parse(toolUse.input);

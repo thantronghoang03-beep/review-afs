@@ -79,9 +79,12 @@ export async function runRiskAnalysis(input: RiskAnalysisInput): Promise<RiskAna
   const client = getAnthropicClient();
   // Mục 0 điểm 6 (v6.6): web_search chỉ cần cho Mục 9B, ngoài phạm vi chế độ này —
   // không bật tool này ở đây để giảm độ trễ/chi phí, dùng tool_choice ép buộc luôn.
+  // 32000 (không phải 16000): Sonnet 5 mặc định bật adaptive thinking, tính chung vào
+  // max_tokens — báo cáo phức tạp (nhiều risk_items/ratios/variances) có thể cần nhiều
+  // token suy nghĩ hơn trước khi sinh JSON kết quả.
   const stream = client.messages.stream({
     model: CLAUDE_MODEL,
-    max_tokens: 16000,
+    max_tokens: 32000,
     system: getSystemBlocks(),
     tools: [
       {
@@ -100,6 +103,15 @@ export async function runRiskAnalysis(input: RiskAnalysisInput): Promise<RiskAna
   );
   if (!toolUse) {
     throw new Error("Claude không trả về tool_use block như yêu cầu cho phân tích rủi ro.");
+  }
+
+  // Xem review.ts: hết max_tokens giữa chừng (kể cả token "suy nghĩ" nội bộ) có thể để
+  // lại tool_use.input hợp lệ cú pháp nhưng thiếu field bắt buộc cuối schema — báo lỗi
+  // rõ ràng thay vì để Zod ném lỗi khó hiểu.
+  if (response.stop_reason === "max_tokens") {
+    throw new Error(
+      "Claude bị cắt giữa chừng vì phân tích quá dài, chưa kịp hoàn thành kết quả (hết max_tokens). Vui lòng thử lại — nếu vẫn lặp lại, báo cho đội kỹ thuật để tăng giới hạn."
+    );
   }
 
   return riskAnalysisResponseZod.parse(toolUse.input);
