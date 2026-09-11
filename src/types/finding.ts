@@ -27,6 +27,7 @@ export type FindingGroup =
   | "bao_cao_kiem_toan"
   | "doi_chieu_tm_so_lieu"
   | "erc_irc"
+  | "kiem_tra_logic"
   | "ho_so_phap_ly"
   | "hieu_luc_phap_ly"
   | "thuat_ngu"
@@ -91,6 +92,7 @@ export const GROUP_ORDER: FindingGroup[] = [
   "bao_cao_kiem_toan",
   "doi_chieu_tm_so_lieu",
   "erc_irc",
+  "kiem_tra_logic",
   "ho_so_phap_ly",
   "hieu_luc_phap_ly",
   "thuat_ngu",
@@ -103,11 +105,12 @@ export const GROUP_LABELS: Record<FindingGroup, string> = {
   bao_cao_kiem_toan: "2. Báo cáo kiểm toán (AR)",
   doi_chieu_tm_so_lieu: "3. BCĐKT / BCKQKD / BCLCTT — Đối chiếu TM",
   erc_irc: "4. Đối chiếu với ERC/IRC",
-  ho_so_phap_ly: "5. Đối chiếu hồ sơ pháp lý mở rộng (Legal folder) — Mới v6.0",
-  hieu_luc_phap_ly: "6. Kiểm tra căn cứ pháp lý — Hiệu lực văn bản — Mới v6.0",
-  thuat_ngu: "7. Chuẩn hóa thuật ngữ & wording (Terminology) — Mới v6.0",
-  doi_chieu_phien_ban: "8. Đối chiếu với phiên bản liền kề (Version comparison) — Mới v6.0",
-  khac: "9. Khác",
+  kiem_tra_logic: "5. Kiểm tra logic số liệu BCTC ↔ Thuyết minh (Mục 11A) — Mới v6.6",
+  ho_so_phap_ly: "6. Đối chiếu hồ sơ pháp lý mở rộng (Legal folder) — Mới v6.0",
+  hieu_luc_phap_ly: "7. Kiểm tra căn cứ pháp lý — Hiệu lực văn bản — Mới v6.0",
+  thuat_ngu: "8. Chuẩn hóa thuật ngữ & wording (Terminology) — Mới v6.0",
+  doi_chieu_phien_ban: "9. Đối chiếu với phiên bản liền kề (Version comparison) — Mới v6.0",
+  khac: "10. Khác",
 };
 
 // Findings created before this grouping existed (v6.1 rollout, pre-grouping) have no

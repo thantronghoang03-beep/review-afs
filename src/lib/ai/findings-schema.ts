@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-// Nhóm hiển thị bảng chi tiết (8 nhóm theo format mẫu + 1 "khac" dự phòng). Giữ enum
+// Nhóm hiển thị bảng chi tiết (9 nhóm theo format mẫu + 1 "khac" dự phòng). Giữ enum
 // này khớp với FindingGroup / GROUP_ORDER trong src/types/finding.ts.
 const GROUP_ENUM = [
   "trang_bia_muc_luc",
   "bao_cao_kiem_toan",
   "doi_chieu_tm_so_lieu",
   "erc_irc",
+  "kiem_tra_logic",
   "ho_so_phap_ly",
   "hieu_luc_phap_ly",
   "thuat_ngu",
