@@ -21,6 +21,8 @@ interface RiskAnalysisInput {
   // chi phí...) khi tick "Phân tích rủi ro báo cáo tài chính" — tùy chọn, dùng làm bối
   // cảnh để đối chiếu số liệu với thực tế hoạt động, không bắt buộc.
   businessDescription: string | null;
+  // "Bắt đầu kiểm tra mẫu" trên form — ép trả kết quả mẫu, không gọi Claude thật.
+  forceMock?: boolean;
 }
 
 // Mục 2 (v6.6) — cùng bộ thẻ input với chế độ kiem_tra_bao_cao, nhưng chế độ này (Mục
@@ -69,7 +71,7 @@ function getSystemBlocks(): Anthropic.TextBlockParam[] {
 }
 
 export async function runRiskAnalysis(input: RiskAnalysisInput): Promise<RiskAnalysisResponse> {
-  if (isMockReviewEnabled()) {
+  if (isMockReviewEnabled() || input.forceMock) {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return buildMockRiskAnalysisResponse();
   }

@@ -67,6 +67,12 @@ export interface Check extends CheckFilePaths {
   auditReviewError: string | null;
   riskAnalysisError: string | null;
 
+  // Người dùng bấm "Bắt đầu kiểm tra mẫu" thay vì "Bắt đầu kiểm tra" — ép trả kết quả
+  // mẫu cố định, không gọi Claude API thật, bất kể server có bật MOCK_AI_REVIEW hay
+  // không. Dùng để demo/thử luồng mà không tốn phí. Hiển thị rõ trên kết quả và lịch sử
+  // để không nhầm với lượt kiểm tra thật.
+  isSample: boolean;
+
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;
@@ -86,6 +92,7 @@ export interface CheckListItem {
   criticalCount: number;
   mediumCount: number;
   minorCount: number;
+  isSample: boolean;
 }
 
 export interface CheckListFilters {

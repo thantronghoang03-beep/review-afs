@@ -119,6 +119,7 @@ async function runAuditReviewTask(
     ircChanged: check.fileIrcLatestPath ? (options.ircChanged ?? "na") : null,
     draftDocument,
     legalDossierDocument,
+    forceMock: check.isSample,
   });
 
   const findingsToInsert = result.data.findings.map((f, index) => ({
@@ -161,6 +162,7 @@ async function runRiskAnalysisTask(check: Check, vnDocument: string, enDocument:
     vnDocument,
     enDocument,
     businessDescription: check.businessDescription,
+    forceMock: check.isSample,
   });
 
   return {

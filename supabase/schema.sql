@@ -60,6 +60,9 @@ create table if not exists checks (
   -- đây để hiển thị banner riêng.
   audit_review_error       text,
   risk_analysis_error      text,
+  -- Người dùng bấm "Bắt đầu kiểm tra mẫu" thay vì "Bắt đầu kiểm tra" — ép trả kết quả
+  -- mẫu cố định, không gọi Claude API thật.
+  is_sample                boolean not null default false,
 
   created_at               timestamptz not null default now(),
   started_at               timestamptz,
@@ -101,6 +104,7 @@ alter table checks add column if not exists risk_analysis_json jsonb;
 alter table checks add column if not exists business_description text;
 alter table checks add column if not exists audit_review_error text;
 alter table checks add column if not exists risk_analysis_error text;
+alter table checks add column if not exists is_sample boolean not null default false;
 
 create index if not exists idx_findings_check_id on findings(check_id);
 create index if not exists idx_findings_severity  on findings(check_id, severity);

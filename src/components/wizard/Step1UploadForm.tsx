@@ -62,8 +62,7 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
     (runAuditReview || runRiskAnalysis) &&
     !submitting;
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function submitForm(isSample: boolean) {
     if (!canSubmit || !selectedCompany) return;
 
     const formData = new FormData();
@@ -91,8 +90,14 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
       formData.set("businessDescription", businessDescription.trim());
     }
     filesLegalDossier.forEach((f) => formData.append("fileLegalDossier", f));
+    formData.set("isSample", isSample ? "true" : "false");
 
     onSubmit(formData);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submitForm(false);
   }
 
   return (
@@ -437,13 +442,27 @@ export function Step1UploadForm({ onSubmit, submitting, submitError }: Step1Uplo
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="mt-5 w-full rounded-lg bg-jpa-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-jpa-teal/90 disabled:cursor-not-allowed disabled:bg-zinc-300"
-        >
-          {submitting ? "Đang gửi..." : "▶ Bắt đầu kiểm tra"}
-        </button>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => submitForm(true)}
+            className="w-full rounded-lg border border-jpa-teal bg-white py-2.5 text-sm font-semibold text-jpa-teal transition-colors hover:bg-jpa-50 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:text-zinc-300"
+          >
+            {submitting ? "Đang gửi..." : "🧪 Bắt đầu kiểm tra mẫu"}
+          </button>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full rounded-lg bg-jpa-teal py-2.5 text-sm font-semibold text-white transition-colors hover:bg-jpa-teal/90 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          >
+            {submitting ? "Đang gửi..." : "▶ Bắt đầu kiểm tra"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-zinc-400">
+          &quot;Bắt đầu kiểm tra mẫu&quot; chỉ xuất kết quả giả lập cố định để xem trước giao diện — không gọi
+          Claude API, không tốn phí. &quot;Bắt đầu kiểm tra&quot; chạy bằng API thật.
+        </p>
       </div>
 
       <div className="flex flex-col gap-6">

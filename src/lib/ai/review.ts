@@ -28,6 +28,10 @@ interface ReviewInput {
   // Mục 2 / Mục 9A (v6.1) — hồ sơ pháp lý mở rộng (giấy phép con, ưu đãi thuế, hợp
   // đồng thuê đất...), tùy chọn, có thể ghép nhiều file.
   legalDossierDocument: string | null;
+  // "Bắt đầu kiểm tra mẫu" trên form — ép trả kết quả mẫu, không gọi Claude thật, bất
+  // kể biến môi trường MOCK_AI_REVIEW. Khác với MOCK_AI_REVIEW (áp dụng toàn hệ thống),
+  // đây là lựa chọn của người dùng cho TỪNG lượt kiểm tra.
+  forceMock?: boolean;
 }
 
 export interface ReviewResult {
@@ -153,8 +157,9 @@ function extractToolUse(response: Anthropic.Message): Anthropic.ToolUseBlock | n
 export async function runReview(input: ReviewInput): Promise<ReviewResult> {
   // Chế độ thử nghiệm không cần ANTHROPIC_API_KEY và không gọi Claude — trả về ngay
   // một bộ finding mẫu cố định để test luồng xử lý/giao diện. Bật bằng biến môi
-  // trường MOCK_AI_REVIEW=true trong .env.local.
-  if (isMockReviewEnabled()) {
+  // trường MOCK_AI_REVIEW=true trong .env.local, HOẶC do người dùng bấm "Bắt đầu kiểm
+  // tra mẫu" cho riêng lượt này (input.forceMock).
+  if (isMockReviewEnabled() || input.forceMock) {
     // Giả lập độ trễ xử lý thật để trạng thái "Đang xử lý" trên UI có thời gian hiển thị.
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return {

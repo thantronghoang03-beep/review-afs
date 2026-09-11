@@ -103,7 +103,14 @@ export default function Home() {
                 className="flex items-center justify-between gap-4 py-3 hover:bg-zinc-50"
               >
                 <div>
-                  <div className="text-sm font-medium text-zinc-800">{c.clientName}</div>
+                  <div className="text-sm font-medium text-zinc-800">
+                    {c.clientName}
+                    {c.isSample && (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                        MẪU
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-zinc-400">
                     {PERIOD_TYPE_LABELS[c.periodType]} · {formatDateTime(c.createdAt)}
                   </div>

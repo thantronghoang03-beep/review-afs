@@ -26,6 +26,7 @@ interface CreateCheckInput {
   runAuditReview: boolean;
   runRiskAnalysis: boolean;
   businessDescription: string | null;
+  isSample: boolean;
 }
 
 export function generateCheckId(): string {
@@ -65,6 +66,7 @@ function rowToCheck(row: Record<string, unknown>): Check {
     businessDescription: (row.business_description as string) ?? null,
     auditReviewError: (row.audit_review_error as string) ?? null,
     riskAnalysisError: (row.risk_analysis_error as string) ?? null,
+    isSample: (row.is_sample as boolean) ?? false,
     createdAt: row.created_at as string,
     startedAt: (row.started_at as string) ?? null,
     completedAt: (row.completed_at as string) ?? null,
@@ -94,6 +96,7 @@ export async function createCheck(input: CreateCheckInput): Promise<Check> {
     run_audit_review: input.runAuditReview,
     run_risk_analysis: input.runRiskAnalysis,
     business_description: input.businessDescription,
+    is_sample: input.isSample,
     status: "processing",
   });
   if (error) throw error;
@@ -177,7 +180,9 @@ export async function listChecks(filters: CheckListFilters = {}): Promise<CheckL
   const supabase = getSupabase();
   let query = supabase
     .from("checks")
-    .select("id, company_id, client_name, created_by, fiscal_year, period_type, status, created_at, completed_at")
+    .select(
+      "id, company_id, client_name, created_by, fiscal_year, period_type, status, created_at, completed_at, is_sample"
+    )
     .order("created_at", { ascending: false });
 
   if (filters.companyId) query = query.eq("company_id", filters.companyId);
@@ -227,6 +232,7 @@ export async function listChecks(filters: CheckListFilters = {}): Promise<CheckL
       criticalCount: counts.critical,
       mediumCount: counts.medium,
       minorCount: counts.minor,
+      isSample: (row.is_sample as boolean) ?? false,
     };
   });
 }
@@ -255,6 +261,7 @@ export async function getPreviousCheckForCompany(
     .select("*")
     .eq("company_id", companyId)
     .eq("status", "done")
+    .eq("is_sample", false) // không dùng lượt kiểm tra mẫu làm bản liền kề cho review thật
     .neq("id", excludeCheckId)
     .order("created_at", { ascending: false })
     .limit(1)

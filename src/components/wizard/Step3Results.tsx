@@ -120,6 +120,13 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
         </span>
       </div>
 
+      {check.isSample && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          🧪 <span className="font-semibold">Đây là KẾT QUẢ MẪU</span> — được tạo bằng &quot;Bắt đầu kiểm tra
+          mẫu&quot;, không gọi Claude API thật, chỉ dùng để xem trước giao diện/định dạng.
+        </div>
+      )}
+
       {auditSelected && check.auditReviewError && (
         <ErrorBanner label="Kiểm tra báo cáo kiểm toán" message={check.auditReviewError} />
       )}

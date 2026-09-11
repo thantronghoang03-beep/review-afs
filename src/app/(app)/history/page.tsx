@@ -195,7 +195,14 @@ export default function HistoryPage() {
               <tbody>
                 {filtered.map((c) => (
                   <tr key={c.id} className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50">
-                    <td className="px-4 py-3 font-medium text-zinc-800">{c.clientName}</td>
+                    <td className="px-4 py-3 font-medium text-zinc-800">
+                      {c.clientName}
+                      {c.isSample && (
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                          MẪU
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-zinc-600">{c.createdBy ?? "—"}</td>
                     <td className="px-4 py-3 text-zinc-600">{c.fiscalYear}</td>
                     <td className="px-4 py-3 text-zinc-600">{PERIOD_TYPE_LABELS[c.periodType]}</td>

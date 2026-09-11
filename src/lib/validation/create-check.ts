@@ -17,6 +17,7 @@ export const createCheckFieldsSchema = z.object({
   runAuditReview: z.boolean(),
   runRiskAnalysis: z.boolean(),
   businessDescription: z.string().trim().nullable(),
+  isSample: z.boolean(),
 }).refine((v) => v.runAuditReview || v.runRiskAnalysis, {
   message: "Chọn ít nhất 1 loại kiểm tra: Kiểm tra báo cáo kiểm toán hoặc Phân tích rủi ro báo cáo tài chính.",
   path: ["runAuditReview"],

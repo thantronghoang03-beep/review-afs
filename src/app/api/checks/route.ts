@@ -61,6 +61,7 @@ export async function POST(request: Request) {
     runAuditReview: formData.get("runAuditReview") === "true",
     runRiskAnalysis: formData.get("runRiskAnalysis") === "true",
     businessDescription: formData.get("businessDescription") || null,
+    isSample: formData.get("isSample") === "true",
   });
 
   if (!fields.success) {
@@ -147,6 +148,7 @@ export async function POST(request: Request) {
     runAuditReview: data.runAuditReview,
     runRiskAnalysis: data.runRiskAnalysis,
     businessDescription: data.businessDescription,
+    isSample: data.isSample,
   });
 
   // Fire-and-forget: runCheckJob catches all errors internally and persists them to the DB row.
