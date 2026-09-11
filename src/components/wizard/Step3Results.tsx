@@ -102,7 +102,30 @@ export function Step3Results({ check, findings }: Step3ResultsProps) {
   );
 
   const riskContent = riskSucceeded && check.riskAnalysis && (
-    <RiskAnalysisSection analysis={check.riskAnalysis} businessDescription={check.businessDescription} />
+    <div className="space-y-6">
+      <RiskAnalysisSection analysis={check.riskAnalysis} businessDescription={check.businessDescription} />
+
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-zinc-200 bg-white p-4">
+        <a
+          href={`/api/checks/${check.id}/export-risk-pdf`}
+          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          <DownloadIcon size={16} /> Xuất báo cáo rủi ro (PDF)
+        </a>
+        <a
+          href={`/api/checks/${check.id}/export-risk-xlsx`}
+          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          <FileSpreadsheetIcon size={16} /> Xuất file chi tiết (Excel)
+        </a>
+        <a
+          href={`/api/checks/${check.id}/export-risk-html`}
+          className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          <FileTextIcon size={16} /> Xuất báo cáo (HTML)
+        </a>
+      </div>
+    </div>
   );
 
   return (
