@@ -144,26 +144,26 @@ const lenientString = z.preprocess((val) => {
   return String(val);
 }, z.string());
 
-function lenientEnum<T extends readonly [string, ...string[]]>(values: T) {
-  return z.preprocess((val) => (typeof val === "string" ? val.trim().toLowerCase() : val), z.enum(values));
-}
-
-// "group" đặc biệt cần rộng lượng hơn nữa: nó không ảnh hưởng gì tới nghiệp vụ (chỉ
-// dùng để gom nhóm hiển thị bảng), nên nếu model lỡ trả về 1 giá trị lạ không khớp
-// enum (ví dụ do hiểu nhầm mô tả/prompt), rơi về "khac" thay vì làm hỏng validation
-// của CẢ response — tránh mất toàn bộ finding hợp lệ khác chỉ vì 1 field không quan
-// trọng của 1 dòng.
-function lenientGroupEnum<T extends readonly [string, ...string[]]>(values: T) {
+// Một finding sai lệch 1 enum field (group/status/category) không nên làm mất toàn bộ
+// response — trước đây "group" là strict enum (lenientEnum) và 1 giá trị lạ (ví dụ do
+// model lặp lại nhầm 1 ví dụ cũ trong description) khiến Zod reject CẢ mảng "findings",
+// mất luôn kết quả kiểm tra báo cáo kiểm toán dù chế độ phân tích rủi ro chạy song song
+// vẫn thành công — đúng triệu chứng "tick cả 2 nhưng chỉ thấy kết quả phân tích rủi ro".
+// Áp dụng rộng lượng cho cả 3 field enum cấp finding, rơi về 1 giá trị an toàn thay vì
+// throw, để 1 lỗi nhỏ không đánh đổi toàn bộ lượt gọi API (đã tốn phí) đã chạy đúng.
+function lenientEnumWithFallback<T extends readonly [string, ...string[]]>(values: T, fallback: T[number]) {
   return z.preprocess((val) => {
     const normalized = typeof val === "string" ? val.trim().toLowerCase() : val;
     return typeof normalized === "string" && (values as readonly string[]).includes(normalized)
       ? normalized
-      : "khac";
+      : fallback;
   }, z.enum(values));
 }
 
 export const findingsResponseZod = z.object({
-  period_type_detected: lenientEnum(["first", "short_prior", "normal", "dissolution"] as const),
+  // Chỉ là 1 field sanity-check hiển thị, không có logic nghiệp vụ nào đọc lại giá trị
+  // này (xem run-check.ts) — rơi về "normal" nếu model trả giá trị lạ, không cần strict.
+  period_type_detected: lenientEnumWithFallback(["first", "short_prior", "normal", "dissolution"] as const, "normal"),
   categories: z.object({
     so_lieu: categoryStatusZod,
     chinh_ta: categoryStatusZod,
@@ -176,29 +176,22 @@ export const findingsResponseZod = z.object({
   findings: z.array(
     z.object({
       section: lenientString,
-      group: lenientGroupEnum(GROUP_ENUM),
+      group: lenientEnumWithFallback(GROUP_ENUM, "khac"),
       field_label: lenientString,
       page_vn: lenientNullableInt,
       page_en: lenientNullableInt,
       content_vn: lenientNullableString,
       content_en: lenientNullableString,
-      status: lenientEnum([
-        "pass",
-        "error",
-        "warning",
-        "missing_in_en",
-        "needs_supplementing",
-        "critical",
-      ] as const),
-      category: lenientEnum([
-        "so_lieu",
-        "chinh_ta",
-        "format",
-        "erc_irc",
-        "phap_ly",
-        "doi_chieu",
-        "khac",
-      ] as const),
+      // Fallback "warning" (chứ không phải "pass") khi status lạ — an toàn hơn: buộc
+      // người dùng để ý dòng đó thay vì âm thầm coi như đã pass.
+      status: lenientEnumWithFallback(
+        ["pass", "error", "warning", "missing_in_en", "needs_supplementing", "critical"] as const,
+        "warning"
+      ),
+      category: lenientEnumWithFallback(
+        ["so_lieu", "chinh_ta", "format", "erc_irc", "phap_ly", "doi_chieu", "khac"] as const,
+        "khac"
+      ),
       note: lenientString,
     })
   ),

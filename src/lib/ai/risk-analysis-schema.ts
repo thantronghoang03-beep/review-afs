@@ -118,8 +118,17 @@ const lenientString = z.preprocess((val) => {
   return typeof val === "string" ? val : String(val);
 }, z.string());
 
-function lenientEnum<T extends readonly [string, ...string[]]>(values: T) {
-  return z.preprocess((val) => (typeof val === "string" ? val.trim().toLowerCase() : val), z.enum(values));
+// Cùng nguyên tắc đã áp dụng cho findings-schema.ts: 1 giá trị enum lạ trong 1 dòng
+// (ratio/variance/risk_item) không nên làm Zod reject CẢ response, mất luôn toàn bộ
+// kết quả phân tích rủi ro chỉ vì 1 field hiển thị của 1 dòng — rơi về giá trị an toàn
+// thay vì throw.
+function lenientEnumWithFallback<T extends readonly [string, ...string[]]>(values: T, fallback: T[number]) {
+  return z.preprocess((val) => {
+    const normalized = typeof val === "string" ? val.trim().toLowerCase() : val;
+    return typeof normalized === "string" && (values as readonly string[]).includes(normalized)
+      ? normalized
+      : fallback;
+  }, z.enum(values));
 }
 
 export const riskAnalysisResponseZod = z.object({
@@ -128,16 +137,16 @@ export const riskAnalysisResponseZod = z.object({
       label: lenientString,
       value: lenientString,
       comparison: lenientNullableString,
-      tone: lenientEnum(KPI_TONE_ENUM),
+      tone: lenientEnumWithFallback(KPI_TONE_ENUM, "warn"),
     })
   ),
   overall_risk: z.object({
-    level: lenientEnum(OVERALL_RISK_LEVEL_ENUM),
+    level: lenientEnumWithFallback(OVERALL_RISK_LEVEL_ENUM, "medium"),
     summary: lenientString,
   }),
   ratios: z.array(
     z.object({
-      category: lenientEnum(RATIO_CATEGORY_ENUM),
+      category: lenientEnumWithFallback(RATIO_CATEGORY_ENUM, "thanh_khoan"),
       name: lenientString,
       unit: lenientString,
       current_year_value: lenientNullableNumber,
@@ -151,15 +160,15 @@ export const riskAnalysisResponseZod = z.object({
       current_year_value: lenientNullableNumber,
       prior_year_value: lenientNullableNumber,
       percent_change: lenientNullableNumber,
-      level: lenientEnum(VARIANCE_LEVEL_ENUM),
+      level: lenientEnumWithFallback(VARIANCE_LEVEL_ENUM, "warning"),
       note: lenientString,
     })
   ),
   risk_items: z.array(
     z.object({
-      group: lenientEnum(RISK_GROUP_ENUM),
+      group: lenientEnumWithFallback(RISK_GROUP_ENUM, "trong_yeu"),
       title: lenientString,
-      level: lenientEnum(RISK_CARD_LEVEL_ENUM),
+      level: lenientEnumWithFallback(RISK_CARD_LEVEL_ENUM, "warning"),
       page: lenientNullableNumber,
       value_vn: lenientNullableString,
       summary_en: lenientNullableString,
