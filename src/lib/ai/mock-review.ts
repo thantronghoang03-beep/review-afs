@@ -107,6 +107,18 @@ export function buildMockFindingsResponse(input: MockReviewInput): FindingsRespo
         note: "[MOCK] Tính lại = 12.480.000.000, báo cáo ghi 12.450.000.000 — chênh lệch 30.000.000.",
       },
       {
+        section: "11A.7 (R09)",
+        group: "kiem_tra_logic",
+        field_label: "BCLCTT dòng 09 — Tăng/giảm phải thu khách hàng",
+        page_vn: 6,
+        page_en: 6,
+        content_vn: "Dòng 09 = -1.200.000.000",
+        content_en: "Line 09 = -1,200,000,000",
+        status: "error",
+        category: "so_lieu",
+        note: "[MOCK] Bảng Movement tính lại từ biến động phải thu (Note 5.2) = -1.450.000.000, lệch 250.000.000 so với BCLCTT — chưa loại trừ đúng phần phải thu thuộc hoạt động đầu tư, cần rà soát lại theo bộ quy tắc R1-R36 (Mục 11A.7).",
+      },
+      {
         section: "9",
         group: "erc_irc",
         field_label: "Vốn điều lệ đối chiếu ERC",
